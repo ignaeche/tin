@@ -143,6 +143,7 @@ let CSS = `
 
     i18next.init({
         lng: 'en',
+        fallbackLng: 'en',
         ns: 'translation',
         load: 'languageOnly',
         resources: {
