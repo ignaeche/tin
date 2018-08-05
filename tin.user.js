@@ -167,7 +167,8 @@ let CSS = `
                         percentage: "{{percentage}}% completed",
                         remaining: "{{remaining}} out of {{total}} minutes remaining",
                         average: "{{average}}-minute episode average"
-                    }
+                    },
+                    consoleManualOrderingMessage: "Remember that in order to view the expiring titles in your list, you need to set 'Manual Ordering' in the following URL: https://www.netflix.com/MyListOrder"
                 }
             },
             es: {
@@ -191,7 +192,8 @@ let CSS = `
                         percentage: "{{percentage}}% completado",
                         remaining: "{{remaining}} de {{total}} minutos restantes",
                         average: "{{average}} minutos promedio por episodio"
-                    }
+                    },
+                    consoleManualOrderingMessage: "Recuerda que para ver los t\u00EDtulos por expirar en tu lista, debes seleccionar 'Orden Manual' en la siguiente URL: https://www.netflix.com/MyListOrder"
                 }
             }
         }
@@ -363,9 +365,18 @@ let CSS = `
         });
     }
 
+    var consoleMyListMessage = false;
+
     function modifyMyList() {
         // If we are not on "My List", return
-        if (!$(".rowListContainer").length) return;
+        if (!$(".rowListContainer").length) {
+            // Let user know through console how to use manual ordering
+            if (document.URL.includes('my-list') && !consoleMyListMessage) {
+                consoleMyListMessage = true
+                console.info(i18next.t('consoleManualOrderingMessage'))
+            }
+            return;
+        }
         makeExpiringTitles(getExpirations());
         appendSearchesToMyListItems();
     }
