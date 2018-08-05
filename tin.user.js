@@ -430,6 +430,8 @@ let CSS = `
     }
 
     function modifyEpisodesTab() {
+        // Work in progress
+        return;
         // Get total watch time of season
         $(".jawBone #pane-Episodes").each(function() {
             var durations = []
