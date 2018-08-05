@@ -7,8 +7,10 @@
 // @match        http://*.netflix.com/*
 // @match        https://*.netflix.com/*
 // @grant        GM_addStyle
+// @grant        unsafeWindow
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAydJREFUeNrsWr160zAUlS07beDLxpQ+ANlY4AE6Zkk3FrqxNFsnNiY2pm5lYWsXNrqwNQ8AC1vzAOQF/PHTOLU5ilzhWLJklWI5H9LnIf6RfM/VufceKQ6+9R+RbW4h2fK29QAi8evJw22y++t3TyEPwAPwADwAD8AD8AA8gJKYa9IeZ+TpDRllZJj/ubgIyFVIvlAyDzsMYLIi0+WG3Rt3b5Gc9shF1DEKwesffpI317XWi4YH8BgeRpeuAIAp73/ZGXSHLv8KADwKUwa59aCDdcdh7joGwAel9eD6IixCFp7GIT82WNPp5a47APAfEo5s+usdlnDkEH+1rMJAdwyCLm4otL+qXkkC8ryvsB4NmQe3EsnWg5W7GRhlCiuTenfC0+cxOVpWJ4HEG6fPNoc9jYvZPkzZXRH6GA2eQlI2TqCOQvIM6NtZRD6Hui6wvoIQAKZp9SJ/O2iJ412vAGkNIJGrVWoYKwnUBNPniYmWZhyb5r21MTCnCq+c3HdynDQIEmCQ04kZwJXqzv4N+fSD5fhpWiSZdhpeZ02hGWWUUNYBmI7j6PYUtPlLPYeOZzHrO8xYnLxILTKyrpC97TGOGhufX6HnLmIWzUnj9I/khtpSJB/KwFxSJqhkhbKgllICQ5/Hdr6En0DZ5noOXhfWly/KknaU3UnMYRIgB2yrKWAAgybyRPtYw4DLxpo8bELQ8QNyvMu8YoXk5NosBOtiJrn3BQ1iekYLlcYF3F5eq+SEnjtcGUpH20tKUa3KBQsYDtZVU0ZirH2dWNSDBgiVcV/BBwTDIO88ADEzgKFcoDmgkCwbUadm1BzuXdmV4Om84uBx31CelMpiEbqgENcR8jJXT+jpUr1OcAAA1su1kO+vKPUjF6ryrRl1RCEuweXMyHd+cHABB3ogWnhlUC9xYncAMAnHO4w2GgFnVGkthHWozyqy0rIqDo43tsR2g20gQsNCAiZBGwCiJr6EmNNv7pajFrxvsyAE4nObJt9K8O31PSlqYTFbkYUteZ2UvpWIbJk979hfIv4vJg/AA/AAPAAPwAPwAP5nAJGs7/wMeAA27bcAAwBa7y0qtn/RnAAAAABJRU5ErkJggg==
-// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js#sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
+// @require      https://cdnjs.cloudflare.com/ajax/libs/i18next/11.5.0/i18next.min.js#sha256-OkYwGDArM5E/cUjqyUWhWooD5cUY3HmiwTQE9kiKa/s=
 // ==/UserScript==
 
 /**
@@ -137,6 +139,68 @@ let CSS = `
 (function() {
     'use strict';
     var $ = window.jQuery;
+    var i18next = window.i18next;
+
+    i18next.init({
+        lng: 'en',
+        ns: 'translation',
+        load: 'languageOnly',
+        resources: {
+            en: {
+                translation: {
+                    cats: {
+                        tv: "TV Series",
+                        movie: "Movie/Special"
+                    },
+                    actions: {
+                        bringToTop: "Bring to Top &uarr;",
+                        viewInList: "View in List &darr;",
+                        removeFromList: "Remove from List"
+                    },
+                    list: {
+                        refreshing: "Refreshing your list...",
+                        title_empty: "There are no titles in your list expiring soon!",
+                        title: "The following title in your list is expiring soon:",
+                        title_plural: "The following {{count}} titles in your list are expiring soon:"
+                    },
+                    season: {
+                        percentage: "{{percentage}}% completed",
+                        remaining: "{{remaining}} out of {{total}} minutes remaining",
+                        average: "{{average}}-minute episode average"
+                    }
+                }
+            },
+            es: {
+                translation: {
+                    cats: {
+                        tv: "Serie de TV",
+                        movie: "Pel\u00EDcula/Especial"
+                    },
+                    actions: {
+                        bringToTop: "Traer al Inicio &uarr;",
+                        viewInList: "Ver en Lista &darr;",
+                        removeFromList: "Remover de Lista"
+                    },
+                    list: {
+                        refreshing: "Recargando tu lista...",
+                        title_empty: "No hay t\u00EDtulos en tu lista que expiren pronto!",
+                        title: "El siguiente t\u00EDtulo de tu lista expira pronto:",
+                        title_plural: "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:"
+                    },
+                    season: {
+                        percentage: "{{percentage}}% completado",
+                        remaining: "{{remaining}} de {{total}} minutos restantes",
+                        average: "{{average}} minutos promedio por episodio"
+                    }
+                }
+            }
+        }
+    }, (err, t) => {
+        if (err) return console.err("TIN: 18next error!", err)
+        console.log('TIN: i18next loaded successfully!')
+    });
+
+    i18next.changeLanguage(unsafeWindow.netflix.notification.constants.locale)
 
     addStyle()
     // Observe changes to body
@@ -170,12 +234,12 @@ let CSS = `
         if (isTVShow(element)) {
             img.attr({
                 src: CATEGORY_ICONS.tv,
-                title: "TV Series"
+                title: i18next.t('cats.tv')
             })
         } else {
             img.attr({
                 src: CATEGORY_ICONS.movie,
-                title: "Movie/Special"
+                title: i18next.t('cats.movie')
             })
         }
         return img
@@ -242,21 +306,12 @@ let CSS = `
         div.append(titleDiv)
         // If list is refreshing, then say so and return; otherwise show title
         if ($(".rowListSpinLoader").length) {
-            titleDiv.text("Refreshing your list...")
+            titleDiv.text(i18next.t('list.refreshing'))
             return;
         } else {
-            var text;
-            switch (titles.length) {
-                case 0:
-                    text = "There are no titles in your list expiring soon!";
-                    break;
-                case 1:
-                    text = "The following title in your list is expiring soon:";
-                    break;
-                default:
-                    text = `The following ${titles.length} titles in your list are expiring soon:`
-            }
-            titleDiv.text(text)
+            var options = { count: titles.length }
+            if (titles.length == 0) options.context = 'empty'
+            titleDiv.text(i18next.t('list.title', options))
         }
 
         // Iterate over expiring titles
@@ -285,15 +340,15 @@ let CSS = `
             item.append(links)
             // Bring to Top link
             if ($(".move-to-top", this).length) {
-                links.append(makeActionLink(`javascript:document.querySelector("#${this.id} .move-to-top").firstElementChild.click()`, "Bring to Top &uarr;"))
+                links.append(makeActionLink(`javascript:document.querySelector("#${this.id} .move-to-top").firstElementChild.click()`, i18next.t('actions.bringToTop')))
             }
             // View in List link
-            links.append(makeActionLink(`javascript:document.querySelector("#${this.id}").scrollIntoView({ behavior: "smooth" })`, "View in List &darr;"))
+            links.append(makeActionLink(`javascript:document.querySelector("#${this.id}").scrollIntoView({ behavior: "smooth" })`, i18next.t('actions.bringToTop')))
             // Remove from List link
             links.append(
                 makeActionLink(
                     `javascript:if (confirm("Are you sure you want to remove ${$(".title a", this).text()}?")) document.querySelector("#${this.id} .remove").firstElementChild.click()`,
-                    "Remove from List"
+                    i18next.t('actions.removeFromList')
                 )
             );
         })
@@ -372,7 +427,7 @@ let CSS = `
             // Reduce into totals
             var remaining = durations.reduce((acc, cur) => acc + cur.remaining, 0)
             var total = durations.reduce((acc, cur) => acc + cur.minutes, 0)
-            var avg = Math.ceil(total / durations.length)
+            var average = Math.ceil(total / durations.length)
             var percentage = Math.floor((total - remaining) / total * 100)
 
             // Remove and check for valid data
@@ -380,9 +435,9 @@ let CSS = `
             if (!durations.length || isNaN(remaining)) return true;
 
             // Append
-            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: `${percentage}% completed` }))
-            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: `${remaining} out of ${total} minutes remaining` }))
-            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: `${avg}-minute episode average` }))
+            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: i18next.t('season.percentage', { percentage }) }))
+            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: i18next.t('season.remaining', { remaining, total }) }))
+            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: i18next.t('season.average', { average }) }))
         });
     }
 })();
