@@ -11,6 +11,9 @@
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAydJREFUeNrsWr160zAUlS07beDLxpQ+ANlY4AE6Zkk3FrqxNFsnNiY2pm5lYWsXNrqwNQ8AC1vzAOQF/PHTOLU5ilzhWLJklWI5H9LnIf6RfM/VufceKQ6+9R+RbW4h2fK29QAi8evJw22y++t3TyEPwAPwADwAD8AD8AA8gJKYa9IeZ+TpDRllZJj/ubgIyFVIvlAyDzsMYLIi0+WG3Rt3b5Gc9shF1DEKwesffpI317XWi4YH8BgeRpeuAIAp73/ZGXSHLv8KADwKUwa59aCDdcdh7joGwAel9eD6IixCFp7GIT82WNPp5a47APAfEo5s+usdlnDkEH+1rMJAdwyCLm4otL+qXkkC8ryvsB4NmQe3EsnWg5W7GRhlCiuTenfC0+cxOVpWJ4HEG6fPNoc9jYvZPkzZXRH6GA2eQlI2TqCOQvIM6NtZRD6Hui6wvoIQAKZp9SJ/O2iJ412vAGkNIJGrVWoYKwnUBNPniYmWZhyb5r21MTCnCq+c3HdynDQIEmCQ04kZwJXqzv4N+fSD5fhpWiSZdhpeZ02hGWWUUNYBmI7j6PYUtPlLPYeOZzHrO8xYnLxILTKyrpC97TGOGhufX6HnLmIWzUnj9I/khtpSJB/KwFxSJqhkhbKgllICQ5/Hdr6En0DZ5noOXhfWly/KknaU3UnMYRIgB2yrKWAAgybyRPtYw4DLxpo8bELQ8QNyvMu8YoXk5NosBOtiJrn3BQ1iekYLlcYF3F5eq+SEnjtcGUpH20tKUa3KBQsYDtZVU0ZirH2dWNSDBgiVcV/BBwTDIO88ADEzgKFcoDmgkCwbUadm1BzuXdmV4Om84uBx31CelMpiEbqgENcR8jJXT+jpUr1OcAAA1su1kO+vKPUjF6ryrRl1RCEuweXMyHd+cHABB3ogWnhlUC9xYncAMAnHO4w2GgFnVGkthHWozyqy0rIqDo43tsR2g20gQsNCAiZBGwCiJr6EmNNv7pajFrxvsyAE4nObJt9K8O31PSlqYTFbkYUteZ2UvpWIbJk979hfIv4vJg/AA/AAPAAPwAPwAP5nAJGs7/wMeAA27bcAAwBa7y0qtn/RnAAAAABJRU5ErkJggg==
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js#sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
 // @require      https://cdnjs.cloudflare.com/ajax/libs/i18next/11.5.0/i18next.min.js#sha256-OkYwGDArM5E/cUjqyUWhWooD5cUY3HmiwTQE9kiKa/s=
+// @updateURL    https://github.com/ignaeche/tin/raw/master/tin.user.js
+// @downloadURL  https://github.com/ignaeche/tin/raw/master/tin.user.js
+// @supportURL   https://github.com/ignaeche/tin/issues
 // ==/UserScript==
 
 /**
