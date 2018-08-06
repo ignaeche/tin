@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tiny Improvements for Netflix (TIN)
 // @namespace    https://github.com/ignaeche
-// @version      1.05
+// @version      1.05.1
 // @description  Improve Netflix by viewing expiring titles at the top of your list, adding search links and more...
 // @author       Ignacio
 // @match        http://*.netflix.com/*
@@ -359,7 +359,7 @@ let CSS = `
                 links.append(makeActionLink(`javascript:document.querySelector("#${this.id} .move-to-top").firstElementChild.click()`, i18next.t('actions.bringToTop')))
             }
             // View in List link
-            links.append(makeActionLink(`javascript:document.querySelector("#${this.id}").scrollIntoView({ behavior: "smooth" })`, i18next.t('actions.bringToTop')))
+            links.append(makeActionLink(`javascript:document.querySelector("#${this.id}").scrollIntoView({ behavior: "smooth" })`, i18next.t('actions.viewInList')))
             // Remove from List link
             links.append(
                 makeActionLink(
