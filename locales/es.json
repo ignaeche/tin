@@ -1,0 +1,23 @@
+{
+    "cats": {
+        "tv": "Serie de TV",
+        "movie": "Pel\u00EDcula/Especial"
+    },
+    "actions": {
+        "bringToTop": "Traer al Inicio &uarr;",
+        "viewInList": "Ver en Lista &darr;",
+        "removeFromList": "Remover de Lista"
+    },
+    "list": {
+        "refreshing": "Recargando tu lista...",
+        "title_empty": "No hay t\u00EDtulos en tu lista que expiren pronto!",
+        "title": "El siguiente t\u00EDtulo de tu lista expira pronto:",
+        "title_plural": "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:"
+    },
+    "season": {
+        "percentage": "{{percentage}}% completado",
+        "remaining": "{{remaining}} de {{total}} minutos restantes",
+        "average": "{{average}} minutos promedio por episodio"
+    },
+    "consoleManualOrderingMessage": "Recuerda que para ver los t\u00EDtulos por expirar en tu lista, debes seleccionar 'Orden Manual' en la siguiente URL: https://www.netflix.com/MyListOrder"
+}

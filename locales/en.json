@@ -1,0 +1,23 @@
+{
+    "cats": {
+        "tv": "TV Series",
+        "movie": "Movie/Special"
+    },
+    "actions": {
+        "bringToTop": "Bring to Top &uarr;",
+        "viewInList": "View in List &darr;",
+        "removeFromList": "Remove from List"
+    },
+    "list": {
+        "refreshing": "Refreshing your list...",
+        "title_empty": "There are no titles in your list expiring soon!",
+        "title": "The following title in your list is expiring soon:",
+        "title_plural": "The following {{count}} titles in your list are expiring soon:"
+    },
+    "season": {
+        "percentage": "{{percentage}}% completed",
+        "remaining": "{{remaining}} out of {{total}} minutes remaining",
+        "average": "{{average}}-minute episode average"
+    },
+    "consoleManualOrderingMessage": "Remember that in order to view the expiring titles in your list, you need to set 'Manual Ordering' in the following URL: https://www.netflix.com/MyListOrder"
+}

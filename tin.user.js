@@ -8,7 +8,10 @@
 // @match        https://*.netflix.com/*
 // @grant        GM_addStyle
 // @grant        unsafeWindow
+// @grant        GM_getResourceText
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAydJREFUeNrsWr160zAUlS07beDLxpQ+ANlY4AE6Zkk3FrqxNFsnNiY2pm5lYWsXNrqwNQ8AC1vzAOQF/PHTOLU5ilzhWLJklWI5H9LnIf6RfM/VufceKQ6+9R+RbW4h2fK29QAi8evJw22y++t3TyEPwAPwADwAD8AD8AA8gJKYa9IeZ+TpDRllZJj/ubgIyFVIvlAyDzsMYLIi0+WG3Rt3b5Gc9shF1DEKwesffpI317XWi4YH8BgeRpeuAIAp73/ZGXSHLv8KADwKUwa59aCDdcdh7joGwAel9eD6IixCFp7GIT82WNPp5a47APAfEo5s+usdlnDkEH+1rMJAdwyCLm4otL+qXkkC8ryvsB4NmQe3EsnWg5W7GRhlCiuTenfC0+cxOVpWJ4HEG6fPNoc9jYvZPkzZXRH6GA2eQlI2TqCOQvIM6NtZRD6Hui6wvoIQAKZp9SJ/O2iJ412vAGkNIJGrVWoYKwnUBNPniYmWZhyb5r21MTCnCq+c3HdynDQIEmCQ04kZwJXqzv4N+fSD5fhpWiSZdhpeZ02hGWWUUNYBmI7j6PYUtPlLPYeOZzHrO8xYnLxILTKyrpC97TGOGhufX6HnLmIWzUnj9I/khtpSJB/KwFxSJqhkhbKgllICQ5/Hdr6En0DZ5noOXhfWly/KknaU3UnMYRIgB2yrKWAAgybyRPtYw4DLxpo8bELQ8QNyvMu8YoXk5NosBOtiJrn3BQ1iekYLlcYF3F5eq+SEnjtcGUpH20tKUa3KBQsYDtZVU0ZirH2dWNSDBgiVcV/BBwTDIO88ADEzgKFcoDmgkCwbUadm1BzuXdmV4Om84uBx31CelMpiEbqgENcR8jJXT+jpUr1OcAAA1su1kO+vKPUjF6ryrRl1RCEuweXMyHd+cHABB3ogWnhlUC9xYncAMAnHO4w2GgFnVGkthHWozyqy0rIqDo43tsR2g20gQsNCAiZBGwCiJr6EmNNv7pajFrxvsyAE4nObJt9K8O31PSlqYTFbkYUteZ2UvpWIbJk979hfIv4vJg/AA/AAPAAPwAPwAP5nAJGs7/wMeAA27bcAAwBa7y0qtn/RnAAAAABJRU5ErkJggg==
+// @resource     locale_en locales/en.json
+// @resource     locale_es locales/es.json
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js#sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
 // @require      https://cdnjs.cloudflare.com/ajax/libs/i18next/11.5.0/i18next.min.js#sha256-OkYwGDArM5E/cUjqyUWhWooD5cUY3HmiwTQE9kiKa/s=
 // @updateURL    https://github.com/ignaeche/tin/raw/master/tin.user.js
@@ -154,62 +157,18 @@ let CSS = `
     var $ = window.jQuery;
     var i18next = window.i18next;
 
+    function parseLocale(lng) {
+        return { translation: JSON.parse(GM_getResourceText(`locale_${lng}`)) }
+    }
+
     i18next.init({
         lng: 'en',
         fallbackLng: 'en',
         ns: 'translation',
         load: 'languageOnly',
         resources: {
-            en: {
-                translation: {
-                    cats: {
-                        tv: "TV Series",
-                        movie: "Movie/Special"
-                    },
-                    actions: {
-                        bringToTop: "Bring to Top &uarr;",
-                        viewInList: "View in List &darr;",
-                        removeFromList: "Remove from List"
-                    },
-                    list: {
-                        refreshing: "Refreshing your list...",
-                        title_empty: "There are no titles in your list expiring soon!",
-                        title: "The following title in your list is expiring soon:",
-                        title_plural: "The following {{count}} titles in your list are expiring soon:"
-                    },
-                    season: {
-                        percentage: "{{percentage}}% completed",
-                        remaining: "{{remaining}} out of {{total}} minutes remaining",
-                        average: "{{average}}-minute episode average"
-                    },
-                    consoleManualOrderingMessage: "Remember that in order to view the expiring titles in your list, you need to set 'Manual Ordering' in the following URL: https://www.netflix.com/MyListOrder"
-                }
-            },
-            es: {
-                translation: {
-                    cats: {
-                        tv: "Serie de TV",
-                        movie: "Pel\u00EDcula/Especial"
-                    },
-                    actions: {
-                        bringToTop: "Traer al Inicio &uarr;",
-                        viewInList: "Ver en Lista &darr;",
-                        removeFromList: "Remover de Lista"
-                    },
-                    list: {
-                        refreshing: "Recargando tu lista...",
-                        title_empty: "No hay t\u00EDtulos en tu lista que expiren pronto!",
-                        title: "El siguiente t\u00EDtulo de tu lista expira pronto:",
-                        title_plural: "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:"
-                    },
-                    season: {
-                        percentage: "{{percentage}}% completado",
-                        remaining: "{{remaining}} de {{total}} minutos restantes",
-                        average: "{{average}} minutos promedio por episodio"
-                    },
-                    consoleManualOrderingMessage: "Recuerda que para ver los t\u00EDtulos por expirar en tu lista, debes seleccionar 'Orden Manual' en la siguiente URL: https://www.netflix.com/MyListOrder"
-                }
-            }
+            en: parseLocale("en"),
+            es: parseLocale("es")
         }
     }, (err, t) => {
         if (err) return console.err("TIN: 18next error!", err)
