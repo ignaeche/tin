@@ -351,7 +351,7 @@ class ExpiringTitlesBuilder {
  *      icon: Image         // Data URI containing a 16x16 image representing the site
  * }
  */
-let SEARCHES = {
+const SEARCHES = {
     imdb: {
         name: "IMDb",
         url: "https://www.imdb.com/find?q=%s",
@@ -403,19 +403,19 @@ let SEARCHES = {
     }
 };
 
-let CATEGORY_ICONS = {
+const CATEGORY_ICONS = {
     movie: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAASElEQVR4AWMY3OD///8TgNgcyp4MxAfQ8GSonDlILW6DIGABEDv8xw0coGr+4zaIREAPF9Hfa6NeG/UaoUxrSkSmNQVn2kENAMn3cyemVPyWAAAAAElFTkSuQmCC",
     show: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAQAAAD8x0bcAAAAZ0lEQVR4AbXKsRVAMBRG4X8ARjABG4A3gaEYwQJGyTKOMiNchRQUyUkR97afSsaKS7xJogV8lHigEwYsisQCzA+yKLJcNBVDYzE0ZKIJOLDIB9CLmotUJ5UkGiz8zsKNvrHjwrt+6QYs8N8NvN/45QAAAABJRU5ErkJggg=="
 };
 
-let COLORS = {
+const COLORS = {
     PAGE_BG: "#141414",
     EXP_BG: "#aa0000",
     IMG_BG: "#FFFFFF",
     ACTION_LINK: "#FFFFFF"
 }
 
-let SELECTORS = {
+const SELECTORS = {
     EXPIRING_TITLES: "tin-expiring-titles",
     EXPIRING_TITLES_ROW: "tin-expiring-titles-row",
     TITLE_PAGE_LINK: "tin-title-page",
@@ -429,12 +429,12 @@ let SELECTORS = {
     IMG_PREFIX: "tin-img-"
 }
 
-let ATTRS = {
+const ATTRS = {
     TITLE: "tin-title",
     YEAR: "tin-year"
 }
 
-let CSS = `
+const CSS = `
 #${SELECTORS.EXPIRING_TITLES} { background-color: ${COLORS.EXP_BG}; margin: 0 4% 20px; padding: 25px 25px 10px; border-radius: 25px; }
 .${SELECTORS.EXPIRING_TITLES_ROW} { margin-bottom: 15px; vertical-align: middle; }
 
@@ -472,9 +472,9 @@ let CSS = `
 
 (function() {
     'use strict';
-    var $ = window.jQuery;
-    var i18next = window.i18next;
-    var moment = window.moment;
+    const $ = window.jQuery;
+    const i18next = window.i18next;
+    const moment = window.moment;
 
     function parseLocale(lng) {
         return { translation: JSON.parse(GM_getResourceText(`locale_${lng}`)) }
@@ -518,7 +518,7 @@ let CSS = `
     function addStyle() {
         GM_addStyle(CSS)
         $.each(SEARCHES, function(index) {
-            var item = SEARCHES[index]
+            const item = SEARCHES[index]
             GM_addStyle(`.${SELECTORS.IMG_PREFIX}${index} { content: url('${item.icon}') }`)
         });
         $("head").append($("<link>", { href: "https://fonts.googleapis.com/icon?family=Material+Icons", rel: "stylesheet" }))
@@ -579,12 +579,12 @@ let CSS = `
                 // If title already present, return
                 if ($(`.${SELECTORS.TITLE}`, this).length) return true;
                 // Get title from artwork
-                var title = $(".video-artwork", this).attr("alt")
+                const title = $(".video-artwork", this).attr("alt")
                 // Decode embedded JSON to extract video_id
-                var content = JSON.parse(decodeURIComponent($(".ptrack-content", this).attr("data-ui-tracking-context")))
+                const content = JSON.parse(decodeURIComponent($(".ptrack-content", this).attr("data-ui-tracking-context")))
                 // Create anchor
-                var a = $("<a>", { href: `/title/${content.video_id}`, text: title })
-                var span = $("<span>", { class: SELECTORS.TITLE })
+                const a = $("<a>", { href: `/title/${content.video_id}`, text: title })
+                const span = $("<span>", { class: SELECTORS.TITLE })
                 span.append(a)
 
                 $(".meta", this).prepend(span)
