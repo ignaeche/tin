@@ -27,8 +27,12 @@
  * Wrap Netflix's Falcor pathEvaluator get/calls
  */
 class FalcorWrapper {
-    constructor(pathEvaluator) {
-        this.pathEvaluator = pathEvaluator;
+    /**
+     * Construct with unsafeWindow because pathEvaluator may not be defined at construct time
+     * @param {Window} unsafeWindow - unsafeWindow
+     */
+    constructor(unsafeWindow) {
+        this.unsafeWindow = unsafeWindow;
     }
 
     /**
@@ -36,7 +40,7 @@ class FalcorWrapper {
      * @returns {Promise}
      */
     getMyListLength() {
-        return this.pathEvaluator.getValue(["mylist", "length"]);
+        return this.unsafeWindow.pathEvaluator.getValue(["mylist", "length"]);
     }
 
     /**
@@ -47,7 +51,7 @@ class FalcorWrapper {
         const values = ["availability","availabilityEndDateNear","delivery","interactiveBookmark","maturity","numSeasonsLabel","queue","releaseYear","runtime","seasonCount","summary","title","userRating","userRatingRequestId"]
         return this.getMyListLength()
         .then(length => {
-            return this.pathEvaluator.get(["mylist", "length"], ["mylist", { from: 0, to: length - 1 }, values])
+            return this.unsafeWindow.pathEvaluator.get(["mylist", "length"], ["mylist", { from: 0, to: length - 1 }, values])
         });
     }
 
@@ -497,7 +501,7 @@ const CSS = `
     i18next.changeLanguage(unsafeWindow.netflix.notification.constants.locale)
     moment.locale(unsafeWindow.netflix.notification.constants.locale)
 
-    const falcor = new FalcorWrapper(unsafeWindow.pathEvaluator)
+    const falcor = new FalcorWrapper(unsafeWindow);
 
     addStyle()
     // Observe changes to body
