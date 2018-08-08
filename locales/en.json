@@ -1,6 +1,6 @@
 {
     "cats": {
-        "tv": "TV Show",
+        "show": "TV Show",
         "movie": "Movie/Special"
     },
     "actions": {
