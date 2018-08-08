@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tiny Improvements for Netflix (TIN)
 // @namespace    https://github.com/ignaeche
-// @version      1.05.1
+// @version      1.10
 // @description  Improve Netflix by viewing expiring titles at the top of your list, adding search links and more...
 // @author       Ignacio
 // @match        http://*.netflix.com/*
@@ -14,18 +14,332 @@
 // @resource     locale_es locales/es.json
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js#sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
 // @require      https://cdnjs.cloudflare.com/ajax/libs/i18next/11.5.0/i18next.min.js#sha256-OkYwGDArM5E/cUjqyUWhWooD5cUY3HmiwTQE9kiKa/s=
+// @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js#sha256-VrmtNHAdGzjNsUNtWYG55xxE9xDTz4gF63x/prKXKH0=
+// @require      https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/2.2.2/moment-duration-format.min.js#sha256-bXC/nhRjq/J7K4hnL8yvthqXkskSKOsZNfrLgXBigYg=
 // @updateURL    https://github.com/ignaeche/tin/raw/master/tin.user.js
 // @downloadURL  https://github.com/ignaeche/tin/raw/master/tin.user.js
 // @supportURL   https://github.com/ignaeche/tin/issues
 // ==/UserScript==
 
+// Tested on Chrome 68+ and Tampermonkey
+
 /**
- * Tested on Chrome 68+
- *
- * In order to use view expiring titles in your queue, you need to select "Manual Ordering" option in the following URL: https://www.netflix.com/MyListOrder
- * This preference is per profile, so if you choose to use "Manual Ordering" no other users are affected.
- *
- * */
+ * Wrap Netflix's Falcor pathEvaluator get/calls
+ */
+class FalcorWrapper {
+    constructor(pathEvaluator) {
+        this.pathEvaluator = pathEvaluator;
+    }
+
+    /**
+     * Get My List length
+     * @returns {Promise}
+     */
+    getMyListLength() {
+        return this.pathEvaluator.getValue(["mylist", "length"]);
+    }
+
+    /**
+     * Get My List
+     * @returns {Promise}
+     */
+    getMyList() {
+        const values = ["availability","availabilityEndDateNear","delivery","interactiveBookmark","maturity","numSeasonsLabel","queue","releaseYear","runtime","seasonCount","summary","title","userRating","userRatingRequestId"]
+        return this.getMyListLength()
+        .then(length => {
+            return this.pathEvaluator.get(["mylist", "length"], ["mylist", { from: 0, to: length - 1 }, values])
+        });
+    }
+
+    /**
+     * Get Expiring Titles
+     * @returns {Promise}
+     */
+    getExpiringTitlesAndStats() {
+        return this.getMyList()
+        .then(response => {
+            const list = response.json.mylist;
+            delete list.$__path;
+            const expiring = Object.values(list).filter(title => {
+                return title.availabilityEndDateNear;
+            });
+            const stats = NetflixTitle.getMyListStats(list);
+            return {
+                mylist: { length: response.json.mylist.length, stats },
+                expiring
+            }
+        })
+    }
+};
+
+/**
+ * Helper functions for Netflix title manipulation
+ */
+class NetflixTitle {
+    constructor() { }
+
+    /**
+     * Get number of movies and shows
+     * @param {Array} list - 'My List' array
+     * @returns {object} - { movie, show }
+     */
+    static getMyListStats(list) {
+        return Object.values(list).reduce((acc, cur) => {
+            try {
+                if (typeof cur === "object") {
+                    acc[cur.summary.type] = (acc[cur.summary.type] || 0) + 1;
+                }
+            } catch (err) {
+                () => {};
+            }
+            return acc;
+        }, { movie: 0, show: 0 })
+    }
+
+    /**
+     * Determine if title is a TV show
+     * @param {object} title - Netflix title
+     * @returns {boolean}
+     */
+    static isTVShow(title) {
+        return (title.summary.type === "show");
+    }
+
+    /**
+     * Make search link icons
+     * @param {jQuery} $ - jQuery instance
+     * @param {string} title - Title of movie or show
+     * @param {string} year - Release year
+     * @returns {object} - div
+     */
+    static makeSearchLinks($, title, year) {
+        const titleAndYear = title.concat(` (${year})`)
+
+        // Create 'links' div
+        const links = $("<div>", { class: SELECTORS.SEARCHES, [ATTRS.TITLE]: title, [ATTRS.YEAR]: year })
+
+        // For every key, create a search link
+        $.each(SEARCHES, (key, item) => {
+            let query = item.useYear ? titleAndYear : title;
+            if (!item.hasOwnProperty("spaces") || !item.spaces) {
+                query = query.replace(/\s/gi, '+')
+            }
+            const link = $("<a>", { href: item.url.replace('%s', query), target: "_blank" })
+            link.append($("<img>", { class: `${SELECTORS.IMG_PREFIX}${key}`, title: item.name }))
+            links.append(link)
+        });
+        return links;
+    }
+
+    /**
+     * Make img object with a category icon
+     * @param {jQuery} $ - jQuery instance
+     * @param {i18next} i18next - instance
+     * @param {object} title - Netflix title object
+     * @returns {object} - img
+     */
+    static makeCategoryIcon($, i18next, title) {
+        const img = $("<img>", { class: SELECTORS.CAT_ICON })
+        const suffix = title.summary.type;
+        img.attr({
+            src: CATEGORY_ICONS[suffix],
+            title: i18next.t(`cats.${suffix}`)
+        })
+        return img;
+    }
+
+    /**
+     * Make link to title page
+     * @param {jQuery} $ - jQuery instance
+     * @param {object} title - Netflix title object
+     * @returns {object} - anchor
+     */
+    static makeTitleLink($, title) {
+        return $("<a>", { href: `/title/${title.summary.id}`, text: title.title })
+    }
+
+    /**
+     * Sort the array of expiring titles according to expiring date
+     * @param {Moment} moment - instance
+     * @param {Array} titles - Netflix titles
+     * @returns {Array} - sorted array of expiring titles
+     */
+    static sortExpiringTitles(moment, titles) {
+        const mapped = titles.map(title => {
+            const date = moment(title.availabilityEndDateNear, "l");
+            title.tinExpireDate = date;
+            return title;
+        });
+        mapped.sort((a, b) => {
+            if (a.tinExpireDate.isBefore(b.tinExpireDate)) return -1;
+            if (a.tinExpireDate.isAfter(b.tinExpireDate)) return 1;
+            return 0;
+        });
+        return mapped;
+    }
+}
+
+/**
+ * Class to build expiring titles box
+ */
+class ExpiringTitlesBuilder {
+    /**
+     * Construct with instances
+     * @param {jQuery} $ - jQuery instance
+     * @param {i18next} i18next - instance
+     * @param {Moment} moment - instance
+     */
+    constructor($, i18next, moment) {
+        this.$ = $;
+        this.i18next = i18next;
+        this.moment = moment;
+    }
+
+    /**
+     * Get main expiring title div
+     * Create and prepend if not present in page
+     * @param {object} parent - element to prepend main div
+     */
+    getMainDiv(parent) {
+        const $ = this.$;
+        if ($(`#${SELECTORS.EXPIRING_TITLES}`).length) {
+            $(`#${SELECTORS.EXPIRING_TITLES}`).empty();
+            this.div = $(`#${SELECTORS.EXPIRING_TITLES}`);
+        } else {
+            this.div = this.$("<div>", { id: SELECTORS.EXPIRING_TITLES });
+            parent.prepend(this.div)
+        }
+        return this;
+    }
+
+    /**
+     * Add row with number of expiring titles
+     * @param {number} length - number of expiring titles
+     */
+    addCountExpirationRow(length) {
+        const $ = this.$;
+        const i18next = this.i18next;
+
+        const options = { count: length };
+        if (length == 0) options.context = 'empty';
+
+        $("<div>", {
+            class: SELECTORS.EXPIRING_TITLES_ROW,
+            text: i18next.t('list.title', options)
+        }).appendTo(this.div);
+
+        return this;
+    }
+
+    /**
+     * Add row with My List stats
+     * @param {object} mylist - object with my list stats
+     */
+    addMyListStats(mylist) {
+        const $ = this.$;
+        const i18next = this.i18next;
+
+        const options = { count: mylist.length };
+        if (mylist.length == 0) options.context = 'empty';
+
+        $("<div>", {
+            class: SELECTORS.EXPIRING_TITLES_ROW,
+            html: `${i18next.t('list.stats', options)} (${i18next.t('list.categoryCount', { stats: mylist.stats })})`
+        }).appendTo(this.div);
+
+        return this;
+    }
+
+    /**
+     * Add row with expiring title information
+     * @param {object} title - Netflix title object
+     */
+    addNetflixTitleRow(title) {
+        const $ = this.$;
+        const i18next = this.i18next;
+        const moment = this.moment;
+        const item = $("<div>", { class: SELECTORS.EXPIRING_TITLES_ROW })
+
+        // Add search links and category icon
+        item.append(NetflixTitle.makeSearchLinks($, title.title, title.releaseYear));
+        item.append(NetflixTitle.makeCategoryIcon($, i18next, title));
+
+        // Add link to title page
+        const titleLink = NetflixTitle.makeTitleLink($, title);
+        titleLink.addClass(SELECTORS.TITLE_PAGE_LINK)
+        item.append(titleLink);
+
+        // Year
+        item.append(` (${title.releaseYear})`);
+
+        // Expiration text 'expires in X days (DATE)'
+        const tilExpiration = moment().to(title.tinExpireDate);
+        const formattedDate = title.tinExpireDate.format('L')
+        item.append(` ${i18next.t('list.expires')} ${tilExpiration} (${formattedDate})`);
+
+        // Duration (if show show season label, else format seconds)
+        const duration = title.numSeasonsLabel || moment.duration(title.runtime, 'seconds').format('HH:mm', { trim: false });
+        // const icon = $("<i>", { class: "material-icons", text: "play_circle_outline" });
+        const durationSpan = $("<div>", { class: SELECTORS.DURATION, text: duration });
+        // durationSpan.prepend(icon);
+        item.append(durationSpan);
+
+        // If in manual ordering list type, show action links
+        const titleRowSelector = `div[data-id='${title.summary.id}']`;
+        const titleRow = $(`div[data-id='${title.summary.id}']`);
+        if (titleRow.length) {
+            const actionLink = (href, text, icon) => {
+                const anchor = $("<a>", {
+                    class: SELECTORS.ACTION_LINK,
+                    href: href,
+                    html: text
+                });
+                anchor.append($("<i>", { class: "material-icons", text: icon }));
+                return anchor;
+            };
+            const href = {
+                top: `javascript:document.querySelector("${titleRowSelector} .move-to-top").firstElementChild.click()`,
+                view: `javascript:document.querySelector("${titleRowSelector}").scrollIntoView({ behavior: "smooth" })`,
+                remove: `javascript:if (confirm("Are you sure you want to remove ${title.title}?")) document.querySelector("${titleRowSelector} .remove").firstElementChild.click()`
+            }
+
+            const links = $("<div>", { class: SELECTORS.ACTIONS })
+            item.append(links)
+            // Append action links
+            if ($(".move-to-top", titleRow).length) {
+                links.append(actionLink(href.top, i18next.t('actions.bringToTop'), "arrow_upward"))
+            }
+            links.append(actionLink(href.view, i18next.t('actions.viewInList'), "arrow_downward"))
+            links.append(actionLink(href.remove, i18next.t('actions.removeFromList'), "close"));
+        }
+
+        // Append to main div
+        this.div.append(item);
+
+        return this;
+    }
+
+    /**
+     * Build Expiring Titles box
+     * @param {jQuery} $ - jQuery instance
+     * @param {i18next} i18next - instance
+     * @param {Moment} moment - instance
+     * @param {object} parent - parent of expiring titles div
+     * @param {object} mylist - object with 'My List' stats (e.g. length)
+     * @param {Array} expiring - array of expiring titles
+     */
+    static build($, i18next, moment, parent, mylist, expiring) {
+        const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
+        const builder = new ExpiringTitlesBuilder($, i18next, moment)
+            .getMainDiv(parent)
+            .addMyListStats(mylist)
+            .addCountExpirationRow(sortedExpiring.length);
+        $.each(sortedExpiring, (_, title) => {
+            builder.addNetflixTitleRow(title);
+        })
+        return builder;
+    }
+}
 
 /**
  * To add a search link, add another entry to SEARCHES with a unique key:
@@ -91,7 +405,7 @@ let SEARCHES = {
 
 let CATEGORY_ICONS = {
     movie: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAASElEQVR4AWMY3OD///8TgNgcyp4MxAfQ8GSonDlILW6DIGABEDv8xw0coGr+4zaIREAPF9Hfa6NeG/UaoUxrSkSmNQVn2kENAMn3cyemVPyWAAAAAElFTkSuQmCC",
-    tv: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAQAAAD8x0bcAAAAZ0lEQVR4AbXKsRVAMBRG4X8ARjABG4A3gaEYwQJGyTKOMiNchRQUyUkR97afSsaKS7xJogV8lHigEwYsisQCzA+yKLJcNBVDYzE0ZKIJOLDIB9CLmotUJ5UkGiz8zsKNvrHjwrt+6QYs8N8NvN/45QAAAABJRU5ErkJggg=="
+    show: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAQAAAD8x0bcAAAAZ0lEQVR4AbXKsRVAMBRG4X8ARjABG4A3gaEYwQJGyTKOMiNchRQUyUkR97afSsaKS7xJogV8lHigEwYsisQCzA+yKLJcNBVDYzE0ZKIJOLDIB9CLmotUJ5UkGiz8zsKNvrHjwrt+6QYs8N8NvN/45QAAAABJRU5ErkJggg=="
 };
 
 let COLORS = {
@@ -103,6 +417,7 @@ let COLORS = {
 
 let SELECTORS = {
     EXPIRING_TITLES: "tin-expiring-titles",
+    EXPIRING_TITLES_ROW: "tin-expiring-titles-row",
     TITLE_PAGE_LINK: "tin-title-page",
     TITLE: "tin-title",
     CAT_ICON: "tin-cat-icon",
@@ -121,16 +436,16 @@ let ATTRS = {
 
 let CSS = `
 #${SELECTORS.EXPIRING_TITLES} { background-color: ${COLORS.EXP_BG}; margin: 0 4% 20px; padding: 25px 25px 10px; border-radius: 25px; }
-#${SELECTORS.EXPIRING_TITLES} > div { margin-bottom: 15px; vertical-align: middle; }
+.${SELECTORS.EXPIRING_TITLES_ROW} { margin-bottom: 15px; vertical-align: middle; }
 
-#${SELECTORS.EXPIRING_TITLES} > div:hover .${SELECTORS.TITLE_PAGE_LINK} a { text-decoration: underline; }
+.${SELECTORS.EXPIRING_TITLES_ROW}:hover .${SELECTORS.TITLE_PAGE_LINK} { text-decoration: underline; }
 
-.${SELECTORS.TITLE_PAGE_LINK} a { font-weight: 700; }
-.${SELECTORS.TITLE_PAGE_LINK} a:hover, .${SELECTORS.TITLE} a:hover { text-decoration: underline; }
+.${SELECTORS.TITLE_PAGE_LINK} { font-weight: 700; }
+.${SELECTORS.TITLE_PAGE_LINK}:hover, .${SELECTORS.TITLE} a:hover { text-decoration: underline; }
 .${SELECTORS.TITLE} { display: block; width: 100%; }
 
 .${SELECTORS.CAT_ICON} { vertical-align: inherit; margin-right: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px; border-radius: 5px; }
-.${SELECTORS.DURATION} { vertical-align: inherit; margin-left: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px 5px; border-radius: 5px; font-size: 8pt; }
+.${SELECTORS.DURATION} { display: inline-block; vertical-align: inherit; margin-left: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px 5px; border-radius: 5px; font-size: 0.8vw; }
 .${SELECTORS.TOTAL_DURATION} { display: inline-block; color: #FFFFFF; margin-left: 25px; }
 
 .${SELECTORS.SEARCHES} { display: inline; margin-right: 10px; vertical-align: middle; }
@@ -144,7 +459,10 @@ let CSS = `
 .title .${SELECTORS.SEARCHES} img:hover, .jawBone .${SELECTORS.SEARCHES} img:hover { border-color: ${COLORS.IMG_BG}; }
 
 .${SELECTORS.ACTIONS} { float: right; }
-.${SELECTORS.ACTION_LINK} { font-size: 10pt; border-bottom: 1px solid ${COLORS.ACTION_LINK}; padding: 5px; margin-left: 10px; transition: all 0.4s ease-in-out; }
+.${SELECTORS.ACTION_LINK}, .${SELECTORS.ACTION_LINK} i { font-size: 0.7vw; }
+.${SELECTORS.ACTION_LINK} { border-bottom: 1px solid ${COLORS.ACTION_LINK}; padding: 5px; margin-left: 10px; transition: all 0.4s ease-in-out; }
+.${SELECTORS.ACTION_LINK} i { vertical-align: middle; }
+.${SELECTORS.ACTION_LINK} i::before { content: '\\00a0'; }
 .${SELECTORS.ACTION_LINK}:hover { color: ${COLORS.EXP_BG}; background-color: ${COLORS.ACTION_LINK}; border-radius: 5px; }
 
 .match-score-wrapper.no-rating { display: none; }
@@ -156,6 +474,7 @@ let CSS = `
     'use strict';
     var $ = window.jQuery;
     var i18next = window.i18next;
+    var moment = window.moment;
 
     function parseLocale(lng) {
         return { translation: JSON.parse(GM_getResourceText(`locale_${lng}`)) }
@@ -171,11 +490,14 @@ let CSS = `
             es: parseLocale("es")
         }
     }, (err, t) => {
-        if (err) return console.err("TIN: 18next error!", err)
+        if (err) return console.error("TIN: 18next error!", err)
         console.log('TIN: i18next loaded successfully!')
     });
 
     i18next.changeLanguage(unsafeWindow.netflix.notification.constants.locale)
+    moment.locale(unsafeWindow.netflix.notification.constants.locale)
+
+    const falcor = new FalcorWrapper(unsafeWindow.pathEvaluator)
 
     addStyle()
     // Observe changes to body
@@ -190,184 +512,65 @@ let CSS = `
         modifyEpisodesTab()
     }).observe(document.body, { attributes: true, subtree: true })
 
-    // Add styles
+    /**
+     * Add styles to page from CSS, icons for the search links and Google's Material Icons
+     */
     function addStyle() {
         GM_addStyle(CSS)
         $.each(SEARCHES, function(index) {
             var item = SEARCHES[index]
             GM_addStyle(`.${SELECTORS.IMG_PREFIX}${index} { content: url('${item.icon}') }`)
         });
+        $("head").append($("<link>", { href: "https://fonts.googleapis.com/icon?family=Material+Icons", rel: "stylesheet" }))
     }
 
-    // In "My List" if a title has 'seasons' then the duration is wrapped around a span with class test_dur_str
-    function isTVShow(element) {
-        return $(".test_dur_str", $(".duration", element)).length;
-    }
-
-    function makeCategoryIcon(element) {
-        var img = $("<img>", { class: SELECTORS.CAT_ICON })
-        if (isTVShow(element)) {
-            img.attr({
-                src: CATEGORY_ICONS.tv,
-                title: i18next.t('cats.tv')
-            })
-        } else {
-            img.attr({
-                src: CATEGORY_ICONS.movie,
-                title: i18next.t('cats.movie')
-            })
-        }
-        return img
-    }
-
-    // Make search links
-    function makeSearches(title, year) {
-        var query = title
-        var queryYear = query.concat(` (${year})`)
-
-        // Create links div
-        var links = $("<div>", { class: SELECTORS.SEARCHES, [ATTRS.TITLE]: title, [ATTRS.YEAR]: year })
-
-        // Iterate over searches
-        $.each(SEARCHES, function(index) {
-            var item = SEARCHES[index]
-
-            var finalQuery = item.useYear ? queryYear : query;
-            if (!item.hasOwnProperty("spaces") || !item.spaces) {
-                finalQuery = finalQuery.replace(/\s/gi, '+')
-            }
-
-            var link = $("<a>", { href: item.url.replace('%s', finalQuery), target: "_blank" })
-            link.append($("<img>", { class: `${SELECTORS.IMG_PREFIX}${index}`, title: item.name }))
-            links.append(link)
-        })
-        return links;
-    }
-
-    function makeSearchesFromRow(element) {
-        return makeSearches($(".title", element).text(), $(".year", element).text())
-    }
-
-    // Get expiring titles
-    function getExpirations() {
-        return Array.from($(".rowListItem")).filter(function(title) {
-            // If 'notes' has text, then title is expiring
-            return $(".notes", title).text();
-        });
-    };
-
-    function makeActionLink(href, text) {
-        return $("<a>", {
-            class: SELECTORS.ACTION_LINK,
-            href: href,
-            html: text
-        })
-    }
-
-    // Create div with expiring titles
-    function makeExpiringTitles(titles) {
-        // Create div and prepend to container
-        var div;
-        if ($(`#${SELECTORS.EXPIRING_TITLES}`).length) {
-            $(`#${SELECTORS.EXPIRING_TITLES}`).empty()
-            div = $(`#${SELECTORS.EXPIRING_TITLES}`)
-        } else {
-            div = $("<div>", { id: SELECTORS.EXPIRING_TITLES });
-            $(".rowListContainer").prepend(div)
-        }
-
-        // Prepare title
-        var titleDiv = $("<div>")
-        div.append(titleDiv)
-        // If list is refreshing, then say so and return; otherwise show title
-        if ($(".rowListSpinLoader").length) {
-            titleDiv.text(i18next.t('list.refreshing'))
-            return;
-        } else {
-            var options = { count: titles.length }
-            if (titles.length == 0) options.context = 'empty'
-            titleDiv.text(i18next.t('list.title', options))
-        }
-
-        // Iterate over expiring titles
-        $(titles).each(function () {
-            // Create item div and append
-            var item = $("<div>")
-            div.append(item)
-
-            // Create searches
-            item.append(makeSearchesFromRow(this))
-            item.append(makeCategoryIcon(this))
-            item.append(
-                $("<span>", {
-                    class: SELECTORS.TITLE_PAGE_LINK,
-                    html: $(".title a", this).clone().wrap("<p>").parent().html()
-                })
-            )
-            item.append(` (${$(".year", this).text()})`)
-
-            // Duration
-            item.append($("<span>", { class: SELECTORS.DURATION, text: $(".duration", this).text() }))
-            item.append(" &rarr; ")
-            item.append($(".notes", this).text())
-
-            var links = $("<div>", { class: SELECTORS.ACTIONS })
-            item.append(links)
-            // Bring to Top link
-            if ($(".move-to-top", this).length) {
-                links.append(makeActionLink(`javascript:document.querySelector("#${this.id} .move-to-top").firstElementChild.click()`, i18next.t('actions.bringToTop')))
-            }
-            // View in List link
-            links.append(makeActionLink(`javascript:document.querySelector("#${this.id}").scrollIntoView({ behavior: "smooth" })`, i18next.t('actions.viewInList')))
-            // Remove from List link
-            links.append(
-                makeActionLink(
-                    `javascript:if (confirm("Are you sure you want to remove ${$(".title a", this).text()}?")) document.querySelector("#${this.id} .remove").firstElementChild.click()`,
-                    i18next.t('actions.removeFromList')
-                )
-            );
-        })
-    }
-
-    // Append search links to every item on "My List"
-    function appendSearchesToMyListItems() {
+    /**
+     * Append search links to every item on "My List"
+     */
+    function appendSearchLinksToMyListItems() {
         $(".rowListItem").each(function() {
             // Do not append if already present
             if ($(`.${SELECTORS.SEARCHES}`, this).length) return true;
-            $(".title", this).append(makeSearchesFromRow(this))
+            const searchLinks = NetflixTitle.makeSearchLinks($, $(".title", this).text(), $(".year", this).text());
+            $(".title", this).append(searchLinks)
         });
     }
 
-    var consoleMyListMessage = false;
-
+    /**
+     * Modify 'My List'
+     * Get expiring titles from Falcor and build Expiring Titles box
+     * And append search links to every item if manual ordering is on
+     */
     function modifyMyList() {
-        // If we are not on "My List", return
-        if (!$(".rowListContainer").length) {
-            // Let user know through console how to use manual ordering
-            if (document.URL.includes('my-list') && !consoleMyListMessage) {
-                consoleMyListMessage = true
-                console.info(i18next.t('consoleManualOrderingMessage'))
-            }
-            return;
+        // Check if in 'My List'
+        if (document.URL.includes('my-list')) {
+            const parent = $(".gallery, .rowListContainer");
+            falcor.getExpiringTitlesAndStats().then(response => {
+                const { mylist, expiring } = response;
+                ExpiringTitlesBuilder.build($, i18next, moment, parent, mylist, expiring);
+            })
+            .catch(err => {
+                console.error("TIN: could not fetch list", err)
+            });
+            appendSearchLinksToMyListItems();
         }
-        makeExpiringTitles(getExpirations());
-        appendSearchesToMyListItems();
     }
 
     function modifyTitlePages() {
         $(".jawBone").each(function() {
-            var title = $(".title", this);
-            var query = title.text() || $("img", title).attr("alt");
-            var year = $(".year", this).text();
+            const titleElement = $(".title", this);
+            const title = titleElement.text() || $("img", titleElement).attr("alt");
+            const year = $(".year", this).text();
 
             // If already present, remove and reappend if titles don't match (after a loading state this makes the links correct)
             if ($(`.${SELECTORS.SEARCHES}`, this).length) {
-                if ($(`.${SELECTORS.SEARCHES}`, this).attr(ATTRS.TITLE) === query) return;
+                if ($(`.${SELECTORS.SEARCHES}`, this).attr(ATTRS.TITLE) === title) return;
                 $(`.${SELECTORS.SEARCHES}`, this).remove();
             }
 
-            $(this).prepend(makeSearches(query, year))
-        })
+            const searchLinks = NetflixTitle.makeSearchLinks($, title, year);
+            $(this).prepend(searchLinks)
+        });
     }
 
     function modifyMoreLikeThisTab() {

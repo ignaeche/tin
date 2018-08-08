@@ -4,20 +4,28 @@
         "movie": "Pel\u00EDcula/Especial"
     },
     "actions": {
-        "bringToTop": "Traer al Inicio &uarr;",
-        "viewInList": "Ver en Lista &darr;",
+        "bringToTop": "Traer al Inicio",
+        "viewInList": "Ver en Lista",
         "removeFromList": "Remover de Lista"
     },
     "list": {
+        "stats_empty": "No tienes t\u00EDtulos en tu lista",
+        "stats": "Tienes {{count}} t\u00EDtulo en tu lista",
+        "stats_plural": "Tienes {{count}} t\u00EDtulos en tu lista",
+        "categoryCount": "$t(list.movie, {'count': {{stats.movie}} }) y $t(list.show, {'count': {{stats.show}} })",
+        "movie": "{{count}} pel\u00EDcula",
+        "movie_plural": "{{count}} pel\u00EDculas",
+        "show": "{{count}} serie de TV",
+        "show_plural": "{{count}} series de TV",
         "refreshing": "Recargando tu lista...",
-        "title_empty": "No hay t\u00EDtulos en tu lista que expiren pronto!",
+        "title_empty": "¡No hay t\u00EDtulos en tu lista que expiren pronto!",
         "title": "El siguiente t\u00EDtulo de tu lista expira pronto:",
-        "title_plural": "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:"
+        "title_plural": "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:",
+        "expires": "expira"
     },
     "season": {
         "percentage": "{{percentage}}% completado",
         "remaining": "{{remaining}} de {{total}} minutos restantes",
         "average": "{{average}} minutos promedio por episodio"
-    },
-    "consoleManualOrderingMessage": "Recuerda que para ver los t\u00EDtulos por expirar en tu lista, debes seleccionar 'Orden Manual' en la siguiente URL: https://www.netflix.com/MyListOrder"
+    }
 }

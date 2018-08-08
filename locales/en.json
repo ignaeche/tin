@@ -1,23 +1,31 @@
 {
     "cats": {
-        "tv": "TV Series",
+        "tv": "TV Show",
         "movie": "Movie/Special"
     },
     "actions": {
-        "bringToTop": "Bring to Top &uarr;",
-        "viewInList": "View in List &darr;",
+        "bringToTop": "Bring to Top",
+        "viewInList": "View in List",
         "removeFromList": "Remove from List"
     },
     "list": {
+        "stats_empty": "You have no titles in your list",
+        "stats": "You have {{count, bold}} title in your list",
+        "stats_plural": "You have {{count, bold}} titles in your list",
+        "categoryCount": "$t(list.movie, {'count': {{stats.movie}} }) and $t(list.show, {'count': {{stats.show}} })",
+        "movie": "{{count}} movie",
+        "movie_plural": "{{count}} movies",
+        "show": "{{count}} show",
+        "show_plural": "{{count}} shows",
         "refreshing": "Refreshing your list...",
         "title_empty": "There are no titles in your list expiring soon!",
         "title": "The following title in your list is expiring soon:",
-        "title_plural": "The following {{count}} titles in your list are expiring soon:"
+        "title_plural": "The following {{count}} titles in your list are expiring soon:",
+        "expires": "expires"
     },
     "season": {
         "percentage": "{{percentage}}% completed",
         "remaining": "{{remaining}} out of {{total}} minutes remaining",
         "average": "{{average}}-minute episode average"
-    },
-    "consoleManualOrderingMessage": "Remember that in order to view the expiring titles in your list, you need to set 'Manual Ordering' in the following URL: https://www.netflix.com/MyListOrder"
+    }
 }
