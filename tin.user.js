@@ -69,7 +69,7 @@ class FalcorWrapper {
             });
             const stats = NetflixTitle.getMyListStats(list);
             return {
-                mylist: { length: response.json.mylist.length, stats },
+                mylist: { length: response.json.mylist.length, stats, list },
                 expiring
             }
         })
@@ -181,6 +181,70 @@ class NetflixTitle {
         });
         return mapped;
     }
+
+    /**
+     * Turn Netflix titles into an URL object
+     * @param {object} list - list of Netflix titles
+     * @returns {DOMString} - object URL
+     */
+    static getListAsObjectURL(list) {
+        const keys = ["title", "releaseYear", "summary", "id", "type", "length"];
+        const replacer = (key, value) => {
+            // Only keep keys which are numbers or included in keys
+            if (!isNaN(key) || keys.includes(key)) {
+                return value;
+            }
+            return undefined;
+        };
+        const json = JSON.stringify(list, replacer, 4);
+
+        const blob = new Blob([json], { type: 'application/json' });
+        return URL.createObjectURL(blob);
+    }
+}
+
+/**
+ * Build an Action Links div
+ */
+class ActionLinks {
+    constructor($, i18next) {
+        this.$ = $;
+        this.i18next = i18next;
+        this.links = $("<div>", { class: SELECTORS.ACTIONS })
+    }
+
+    /**
+     * Add link
+     * @param {string} href - href value
+     * @param {string} key - translation key for i18next
+     * @param {string} icon - material icon name
+     * @param {object} attrs - object with additional attributes
+     */
+    addLink(href, key, icon, attrs) {
+        const $ = this.$;
+        const anchor = $("<a>", {
+            class: SELECTORS.ACTION_LINK,
+            href: href,
+            html: this.i18next.t(key)
+        });
+        if (typeof attrs === "object") {
+            $.each(attrs, (key, value) => {
+                anchor.attr(key, value);
+            });
+        }
+        anchor.append($("<i>", { class: "material-icons", text: icon }));
+        this.links.append(anchor);
+        return this;
+    };
+
+    /**
+     * Append actions to parent
+     * @param {object} parent - parent element to append actions
+     */
+    appendTo(parent) {
+        parent.append(this.links);
+        return this;
+    }
 }
 
 /**
@@ -246,10 +310,17 @@ class ExpiringTitlesBuilder {
         const options = { count: mylist.length };
         if (mylist.length == 0) options.context = 'empty';
 
-        $("<div>", {
+        const row = $("<div>", {
             class: SELECTORS.EXPIRING_TITLES_ROW,
             html: `${i18next.t('list.stats', options)} (${i18next.t('list.categoryCount', { stats: mylist.stats })})`
-        }).appendTo(this.div);
+        });
+        row.appendTo(this.div);
+
+        // Export List link
+        const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
+        new ActionLinks($, i18next)
+            .addLink(NetflixTitle.getListAsObjectURL(mylist.list), 'actions.export', 'save_alt', { download: filename })
+            .appendTo(row);
 
         return this;
     }
@@ -292,29 +363,18 @@ class ExpiringTitlesBuilder {
         const titleRowSelector = `div[data-id='${title.summary.id}']`;
         const titleRow = $(`div[data-id='${title.summary.id}']`);
         if (titleRow.length) {
-            const actionLink = (href, text, icon) => {
-                const anchor = $("<a>", {
-                    class: SELECTORS.ACTION_LINK,
-                    href: href,
-                    html: text
-                });
-                anchor.append($("<i>", { class: "material-icons", text: icon }));
-                return anchor;
-            };
             const href = {
                 top: `javascript:document.querySelector("${titleRowSelector} .move-to-top").firstElementChild.click()`,
                 view: `javascript:document.querySelector("${titleRowSelector}").scrollIntoView({ behavior: "smooth" })`,
                 remove: `javascript:if (confirm("Are you sure you want to remove ${title.title}?")) document.querySelector("${titleRowSelector} .remove").firstElementChild.click()`
-            }
+            };
 
-            const links = $("<div>", { class: SELECTORS.ACTIONS })
-            item.append(links)
-            // Append action links
+            const links = new ActionLinks($, i18next).appendTo(item);
             if ($(".move-to-top", titleRow).length) {
-                links.append(actionLink(href.top, i18next.t('actions.bringToTop'), "arrow_upward"))
+                links.addLink(href.top, 'actions.bringToTop', 'arrow_upward');
             }
-            links.append(actionLink(href.view, i18next.t('actions.viewInList'), "arrow_downward"))
-            links.append(actionLink(href.remove, i18next.t('actions.removeFromList'), "close"));
+            links.addLink(href.view, 'actions.viewInList', 'arrow_downward')
+                .addLink(href.remove, 'actions.removeFromList', 'close');
         }
 
         // Append to main div
@@ -491,7 +551,12 @@ const CSS = `
         load: 'languageOnly',
         resources: {
             en: parseLocale("en"),
-            es: parseLocale("es")
+            es: parseLocale("es"),
+            common: {
+                translation: {
+                    profileName: unsafeWindow.netflix.reactContext.models.userInfo.data.name
+                }
+            }
         }
     }, (err, t) => {
         if (err) return console.error("TIN: 18next error!", err)

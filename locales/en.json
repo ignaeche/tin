@@ -6,7 +6,8 @@
     "actions": {
         "bringToTop": "Bring to Top",
         "viewInList": "View in List",
-        "removeFromList": "Remove from List"
+        "removeFromList": "Remove from List",
+        "export": "Export List"
     },
     "list": {
         "stats_empty": "You have no titles in your list",

@@ -6,7 +6,8 @@
     "actions": {
         "bringToTop": "Traer al Inicio",
         "viewInList": "Ver en Lista",
-        "removeFromList": "Remover de Lista"
+        "removeFromList": "Remover de Lista",
+        "export": "Exportar Lista"
     },
     "list": {
         "stats_empty": "No tienes t\u00EDtulos en tu lista",
