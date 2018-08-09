@@ -59,20 +59,14 @@ class FalcorWrapper {
      * Get Expiring Titles
      * @returns {Promise}
      */
-    getExpiringTitlesAndStats() {
+    getExpiringTitles() {
         return this.getMyList()
         .then(response => {
-            const list = response.json.mylist;
-            delete list.$__path;
-            const expiring = Object.values(list).filter(title => {
-                return title.availabilityEndDateNear;
-            });
-            const stats = NetflixTitle.getMyListStats(list);
-            return {
-                mylist: { length: response.json.mylist.length, stats, list },
-                expiring
-            }
-        })
+            const mylist = response.json.mylist;
+            delete mylist.$__path;
+            const expiring = Object.values(mylist).filter(title => title.availabilityEndDateNear);
+            return { mylist, expiring }
+        });
     }
 };
 
@@ -84,11 +78,11 @@ class NetflixTitle {
 
     /**
      * Get number of movies and shows
-     * @param {Array} list - 'My List' array
+     * @param {object} mylist - 'My List' object
      * @returns {object} - { movie, show }
      */
-    static getMyListStats(list) {
-        return Object.values(list).reduce((acc, cur) => {
+    static getMyListStats(mylist) {
+        return Object.values(mylist).reduce((acc, cur) => {
             try {
                 if (typeof cur === "object") {
                     acc[cur.summary.type] = (acc[cur.summary.type] || 0) + 1;
@@ -300,26 +294,27 @@ class ExpiringTitlesBuilder {
     }
 
     /**
-     * Add row with My List stats
-     * @param {object} mylist - object with my list stats
+     * Add row with My List info
+     * @param {object} mylist - 'My List' object
      */
-    addMyListStats(mylist) {
+    addMyListInfo(mylist) {
         const $ = this.$;
         const i18next = this.i18next;
 
         const options = { count: mylist.length };
         if (mylist.length == 0) options.context = 'empty';
 
+        const stats = NetflixTitle.getMyListStats(mylist);
         const row = $("<div>", {
             class: SELECTORS.EXPIRING_TITLES_ROW,
-            html: `${i18next.t('list.stats', options)} (${i18next.t('list.categoryCount', { stats: mylist.stats })})`
+            html: `${i18next.t('list.stats', options)} (${i18next.t('list.categoryCount', { stats })})`
         });
         row.appendTo(this.div);
 
         // Export List link
         const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
         new ActionLinks($, i18next)
-            .addLink(NetflixTitle.getListAsObjectURL(mylist.list), 'actions.export', 'save_alt', { download: filename })
+            .addLink(NetflixTitle.getListAsObjectURL(mylist), 'actions.export', 'save_alt', { download: filename })
             .appendTo(row);
 
         return this;
@@ -389,14 +384,14 @@ class ExpiringTitlesBuilder {
      * @param {i18next} i18next - instance
      * @param {Moment} moment - instance
      * @param {object} parent - parent of expiring titles div
-     * @param {object} mylist - object with 'My List' stats (e.g. length)
+     * @param {object} mylist - 'My List' object
      * @param {Array} expiring - array of expiring titles
      */
     static build($, i18next, moment, parent, mylist, expiring) {
         const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
         const builder = new ExpiringTitlesBuilder($, i18next, moment)
             .getMainDiv(parent)
-            .addMyListStats(mylist)
+            .addMyListInfo(mylist)
             .addCountExpirationRow(sortedExpiring.length);
         $.each(sortedExpiring, (_, title) => {
             builder.addNetflixTitleRow(title);
@@ -614,7 +609,7 @@ const CSS = `
         // Check if in 'My List'
         if (document.URL.includes('my-list')) {
             const parent = $(".gallery, .rowListContainer");
-            falcor.getExpiringTitlesAndStats().then(response => {
+            falcor.getExpiringTitles().then(response => {
                 const { mylist, expiring } = response;
                 ExpiringTitlesBuilder.build($, i18next, moment, parent, mylist, expiring);
             })
