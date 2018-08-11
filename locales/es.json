@@ -1,7 +1,7 @@
 {
     "cats": {
         "show": "Serie de TV",
-        "movie": "Pel\u00EDcula/Especial"
+        "movie": "Película/Especial"
     },
     "actions": {
         "bringToTop": "Traer al Inicio",
@@ -11,18 +11,18 @@
         "export": "Exportar Lista"
     },
     "list": {
-        "stats_empty": "No tienes t\u00EDtulos en tu lista",
-        "stats": "Tienes {{count}} t\u00EDtulo en tu lista",
-        "stats_plural": "Tienes {{count}} t\u00EDtulos en tu lista",
+        "stats_empty": "No tienes títulos en tu lista",
+        "stats": "Tienes {{count}} título en tu lista",
+        "stats_plural": "Tienes {{count}} títulos en tu lista",
         "categoryCount": "$t(list.movie, {'count': {{stats.movie}} }) y $t(list.show, {'count': {{stats.show}} })",
-        "movie": "{{count}} pel\u00EDcula",
-        "movie_plural": "{{count}} pel\u00EDculas",
+        "movie": "{{count}} película",
+        "movie_plural": "{{count}} películas",
         "show": "{{count}} serie de TV",
         "show_plural": "{{count}} series de TV",
         "refreshing": "Recargando tu lista...",
-        "title_empty": "¡No hay t\u00EDtulos en tu lista que expiren pronto!",
-        "title": "El siguiente t\u00EDtulo de tu lista expira pronto:",
-        "title_plural": "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:",
+        "title_empty": "¡No hay títulos en tu lista que expiren pronto!",
+        "title": "El siguiente título de tu lista expira pronto:",
+        "title_plural": "Los siguientes {{count}} títulos en tu lista expiran pronto:",
         "expires": "expira",
         "error": "Ocurrió un error consultando tu lista. Por favor, intenta nuevamente."
     },
