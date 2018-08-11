@@ -71,6 +71,52 @@ class FalcorWrapper {
 };
 
 /**
+ * Class with action functions
+ */
+class TinFunctions {
+    constructor() { }
+
+    /**
+     * View title in list, works in both list modes
+     * @param {Event} event
+     */
+    static viewInList(event) {
+        const { title, id } = event.data;
+        const selectors = `[aria-label='${title}'], div[data-id='${id}']`;
+        document.querySelector(selectors).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /**
+     * Bring title to top of list, manual ordering only
+     * @param {Event} event
+     */
+    static bringToTop(event) {
+        const { id } = event.data;
+        document.querySelector(`div[data-id='${id}'] .move-to-top`).firstElementChild.click();
+    }
+
+    /**
+     * Remove title from list, manual ordering only
+     * @param {Event} event
+     */
+    static removeFromList(event) {
+        const { prompt, id } = event.data;
+        if (confirm(prompt)) {
+            document.querySelector(`div[data-id='${id}'] .remove`).firstElementChild.click();
+        }
+    }
+
+    /**
+     * Export My List to file
+     * @param {Event} event
+     */
+    static exportList(event) {
+        const { mylist } = event.data;
+        this.href = NetflixTitle.getListAsObjectURL(mylist);
+    }
+}
+
+/**
  * Helper functions for Netflix title manipulation
  */
 class NetflixTitle {
@@ -209,16 +255,17 @@ class ActionLinks {
 
     /**
      * Add link
-     * @param {string} href - href value
+     * @param {Function} handler - function to call on click
+     * @param {object} data - event data to pass to handler
      * @param {string} key - translation key for i18next
      * @param {string} icon - material icon name
      * @param {object} attrs - object with additional attributes
+     * @param {boolean} prepend - if true, prepend to parent, otherwise append
      */
-    addLink(href, key, icon, attrs) {
+    addLink(handler, data, key, icon, attrs, prepend = false) {
         const $ = this.$;
         const anchor = $("<a>", {
             class: SELECTORS.ACTION_LINK,
-            href: href,
             html: this.i18next.t(key)
         });
         if (typeof attrs === "object") {
@@ -227,7 +274,8 @@ class ActionLinks {
             });
         }
         anchor.append($("<i>", { class: "material-icons", text: icon }));
-        this.links.append(anchor);
+        anchor.on('click', data, handler);
+        prepend ? this.links.prepend(anchor) : this.links.append(anchor);
         return this;
     };
 
@@ -314,7 +362,7 @@ class ExpiringTitlesBuilder {
         // Export List link
         const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
         new ActionLinks($, i18next)
-            .addLink(NetflixTitle.getListAsObjectURL(mylist), 'actions.export', 'save_alt', { download: filename })
+            .addLink(TinFunctions.exportList, { mylist }, 'actions.export', 'save_alt', { download: filename })
             .appendTo(row);
 
         return this;
@@ -354,22 +402,23 @@ class ExpiringTitlesBuilder {
         // durationSpan.prepend(icon);
         item.append(durationSpan);
 
-        // If in manual ordering list type, show action links
-        const titleRowSelector = `div[data-id='${title.summary.id}']`;
+        // Action links
+        const eventData = {
+            title: title.title,
+            id: title.summary.id,
+            prompt: i18next.t('actions.removePrompt', { title: title.title })
+        };
+        const links = new ActionLinks($, i18next)
+            .appendTo(item)
+            .addLink(TinFunctions.viewInList, eventData, 'actions.viewInList', 'arrow_downward');
+
+        // If in manual ordering list type, add these action links
         const titleRow = $(`div[data-id='${title.summary.id}']`);
         if (titleRow.length) {
-            const href = {
-                top: `javascript:document.querySelector("${titleRowSelector} .move-to-top").firstElementChild.click()`,
-                view: `javascript:document.querySelector("${titleRowSelector}").scrollIntoView({ behavior: "smooth" })`,
-                remove: `javascript:if (confirm("Are you sure you want to remove ${title.title}?")) document.querySelector("${titleRowSelector} .remove").firstElementChild.click()`
-            };
-
-            const links = new ActionLinks($, i18next).appendTo(item);
             if ($(".move-to-top", titleRow).length) {
-                links.addLink(href.top, 'actions.bringToTop', 'arrow_upward');
+                links.addLink(TinFunctions.bringToTop, eventData, 'actions.bringToTop', 'arrow_upward', null, true);
             }
-            links.addLink(href.view, 'actions.viewInList', 'arrow_downward')
-                .addLink(href.remove, 'actions.removeFromList', 'close');
+            links.addLink(TinFunctions.removeFromList, eventData, 'actions.removeFromList', 'close');
         }
 
         // Append to main div

@@ -7,6 +7,7 @@
         "bringToTop": "Bring to Top",
         "viewInList": "View in List",
         "removeFromList": "Remove from List",
+        "removePrompt": "Are you sure you want to remove {{title}}?",
         "export": "Export List"
     },
     "list": {

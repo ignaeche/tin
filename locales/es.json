@@ -7,6 +7,7 @@
         "bringToTop": "Traer al Inicio",
         "viewInList": "Ver en Lista",
         "removeFromList": "Remover de Lista",
+        "removePrompt": "¿Está seguro que desea remover {{title}}?",
         "export": "Exportar Lista"
     },
     "list": {
