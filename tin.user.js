@@ -642,9 +642,8 @@ const CSS = `
      */
     function addStyle() {
         GM_addStyle(CSS)
-        $.each(SEARCHES, function(index) {
-            const item = SEARCHES[index]
-            GM_addStyle(`.${SELECTORS.IMG_PREFIX}${index} { content: url('${item.icon}') }`)
+        $.each(SEARCHES, (key, item) => {
+            GM_addStyle(`.${SELECTORS.IMG_PREFIX}${key} { content: url('${item.icon}') }`)
         });
         $("head").append($("<link>", { href: "https://fonts.googleapis.com/icon?family=Material+Icons", rel: "stylesheet" }))
     }
