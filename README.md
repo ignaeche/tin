@@ -2,6 +2,8 @@
 
 Improve your Netflix experience by:
 - viewing expiring titles at the top of your list.
+- knowing how many titles you have in your list (and how many of them are shows or movies).
+- exporting your list to a JSON file.
 - having search links to [IMDb](https://www.imdb.com/), [Wikipedia](https://www.wikipedia.org/) and many others in every title.
 - having a link to the overview page of a title in the "More Like This" tab.
 
