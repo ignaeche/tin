@@ -23,7 +23,8 @@
         "title_empty": "¡No hay t\u00EDtulos en tu lista que expiren pronto!",
         "title": "El siguiente t\u00EDtulo de tu lista expira pronto:",
         "title_plural": "Los siguientes {{count}} t\u00EDtulos en tu lista expiran pronto:",
-        "expires": "expira"
+        "expires": "expira",
+        "error": "Ocurrió un error consultando tu lista. Por favor, intenta nuevamente."
     },
     "season": {
         "percentage": "{{percentage}}% completado",

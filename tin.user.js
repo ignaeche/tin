@@ -298,27 +298,58 @@ class ExpiringTitlesBuilder {
      * @param {jQuery} $ - jQuery instance
      * @param {i18next} i18next - instance
      * @param {Moment} moment - instance
+     * @param {Element} parent - parent element of the main div
      */
-    constructor($, i18next, moment) {
+    constructor($, i18next, moment, parent) {
         this.$ = $;
         this.i18next = i18next;
         this.moment = moment;
+        this.parent = parent;
     }
 
     /**
-     * Get main expiring title div
-     * Create and prepend if not present in page
-     * @param {object} parent - element to prepend main div
+     * Empty main expiring titles div
+     * Create and prepend to parent element if not present in page
+     * Otherwise empty it
      */
-    getMainDiv(parent) {
+    emptyMainDiv() {
         const $ = this.$;
-        if ($(`#${SELECTORS.EXPIRING_TITLES}`).length) {
-            $(`#${SELECTORS.EXPIRING_TITLES}`).empty();
-            this.div = $(`#${SELECTORS.EXPIRING_TITLES}`);
+        const div = $(`#${SELECTORS.EXPIRING_TITLES}`);
+        if (div.length) {
+            this.div = div;
+            div.empty();
         } else {
             this.div = this.$("<div>", { id: SELECTORS.EXPIRING_TITLES });
-            parent.prepend(this.div)
+            this.parent.prepend(this.div)
         }
+        return this;
+    }
+
+    /**
+     * If loading indicator is in Netflix page, show list refreshing mesage
+     */
+    showIfRefreshing() {
+        const $ = this.$;
+        if ($(".galleryLoader, .rowListSpinLoader").length) {
+            this.emptyMainDiv();
+            $("<div>", {
+                class: SELECTORS.EXPIRING_TITLES_ROW,
+                text: this.i18next.t('list.refreshing')
+            }).appendTo(this.div);
+        }
+        return this;
+    }
+
+    /**
+     * If an error occurred, alert the user
+     */
+    showError() {
+        const $ = this.$;
+        this.emptyMainDiv();
+        $("<div>", {
+            class: SELECTORS.EXPIRING_TITLES_ROW,
+            text: this.i18next.t('list.error')
+        }).appendTo(this.div);
         return this;
     }
 
@@ -360,10 +391,12 @@ class ExpiringTitlesBuilder {
         row.appendTo(this.div);
 
         // Export List link
-        const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
-        new ActionLinks($, i18next)
-            .addLink(TinFunctions.exportList, { mylist }, 'actions.export', 'save_alt', { download: filename })
-            .appendTo(row);
+        if (mylist.length) {
+            const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
+            new ActionLinks($, i18next)
+                .addLink(TinFunctions.exportList, { mylist }, 'actions.export', 'save_alt', { download: filename })
+                .appendTo(row);
+        }
 
         return this;
     }
@@ -425,27 +458,6 @@ class ExpiringTitlesBuilder {
         this.div.append(item);
 
         return this;
-    }
-
-    /**
-     * Build Expiring Titles box
-     * @param {jQuery} $ - jQuery instance
-     * @param {i18next} i18next - instance
-     * @param {Moment} moment - instance
-     * @param {object} parent - parent of expiring titles div
-     * @param {object} mylist - 'My List' object
-     * @param {Array} expiring - array of expiring titles
-     */
-    static build($, i18next, moment, parent, mylist, expiring) {
-        const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
-        const builder = new ExpiringTitlesBuilder($, i18next, moment)
-            .getMainDiv(parent)
-            .addMyListInfo(mylist)
-            .addCountExpirationRow(sortedExpiring.length);
-        $.each(sortedExpiring, (_, title) => {
-            builder.addNetflixTitleRow(title);
-        })
-        return builder;
     }
 }
 
@@ -658,12 +670,27 @@ const CSS = `
         // Check if in 'My List'
         if (document.URL.includes('my-list')) {
             const parent = $(".gallery, .rowListContainer");
-            falcor.getExpiringTitles().then(response => {
-                const { mylist, expiring } = response;
-                ExpiringTitlesBuilder.build($, i18next, moment, parent, mylist, expiring);
+            const builder = new ExpiringTitlesBuilder($, i18next, moment, parent)
+                .showIfRefreshing();
+            falcor.getMyListLength().then(length => {
+                // Get 'My List' length. If empty, handle in rejection callback; otherwise fetch list
+                return (length ? falcor.getExpiringTitles() : Promise.reject(length));
             })
+            .then(
+                // Promise resolved, 'My List' is not empty
+                ({ mylist, expiring }) => {
+                    const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
+                    builder.emptyMainDiv()
+                        .addMyListInfo(mylist)
+                        .addCountExpirationRow(sortedExpiring.length);
+                    $.each(sortedExpiring, (_, title) => builder.addNetflixTitleRow(title));
+                },
+                // Promise rejected, 'My List' is empty
+                length => builder.emptyMainDiv().addMyListInfo({ length })
+            )
             .catch(err => {
-                console.error("TIN: could not fetch list", err)
+                builder.showError();
+                console.error("TIN: could not fetch list", err);
             });
             appendSearchLinksToMyListItems();
         }

@@ -23,7 +23,8 @@
         "title_empty": "There are no titles in your list expiring soon!",
         "title": "The following title in your list is expiring soon:",
         "title_plural": "The following {{count}} titles in your list are expiring soon:",
-        "expires": "expires"
+        "expires": "expires",
+        "error": "There was an error fetching your list. Please try again."
     },
     "season": {
         "percentage": "{{percentage}}% completed",
