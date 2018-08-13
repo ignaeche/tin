@@ -29,7 +29,7 @@
 class FalcorWrapper {
     /**
      * Construct with unsafeWindow because pathEvaluator may not be defined at construct time
-     * @param {Window} unsafeWindow - unsafeWindow
+     * @param {Window} unsafeWindow
      */
     constructor(unsafeWindow) {
         this.unsafeWindow = unsafeWindow;
@@ -174,8 +174,8 @@ class NetflixTitle {
 
     /**
      * Get number of movies and shows
-     * @param {object} mylist - 'My List' object
-     * @returns {object} - { movie, show }
+     * @param {object} mylist 'My List' object
+     * @returns {object} { movie, show }
      */
     static getMyListStats(mylist) {
         return Object.values(mylist).reduce((acc, cur) => {
@@ -192,7 +192,7 @@ class NetflixTitle {
 
     /**
      * Determine if title is a TV show
-     * @param {object} title - Netflix title
+     * @param {object} title Netflix title
      * @returns {boolean}
      */
     static isTVShow(title) {
@@ -201,10 +201,10 @@ class NetflixTitle {
 
     /**
      * Make search link icons
-     * @param {jQuery} $ - jQuery instance
-     * @param {string} title - Title of movie or show
-     * @param {string} year - Release year
-     * @returns {object} - div
+     * @param {jQuery} $ jQuery instance
+     * @param {string} title Title of movie or show
+     * @param {string} year Release year
+     * @returns {object} div
      */
     static makeSearchLinks($, title, year) {
         const titleAndYear = title.concat(` (${year})`)
@@ -227,10 +227,10 @@ class NetflixTitle {
 
     /**
      * Make img object with a category icon
-     * @param {jQuery} $ - jQuery instance
-     * @param {i18next} i18next - instance
-     * @param {object} title - Netflix title object
-     * @returns {object} - img
+     * @param {jQuery} $ jQuery instance
+     * @param {i18next} i18next instance
+     * @param {object} title Netflix title object
+     * @returns {object} img
      */
     static makeCategoryIcon($, i18next, title) {
         const img = $("<img>", { class: SELECTORS.CAT_ICON })
@@ -244,9 +244,9 @@ class NetflixTitle {
 
     /**
      * Make link to title page
-     * @param {jQuery} $ - jQuery instance
-     * @param {object} title - Netflix title object
-     * @returns {object} - anchor
+     * @param {jQuery} $ jQuery instance
+     * @param {object} title Netflix title object
+     * @returns {object} anchor
      */
     static makeTitleLink($, title) {
         return $("<a>", { href: `/title/${title.summary.id}`, text: title.title })
@@ -254,9 +254,9 @@ class NetflixTitle {
 
     /**
      * Sort the array of expiring titles according to expiring date
-     * @param {Moment} moment - instance
-     * @param {Array} titles - Netflix titles
-     * @returns {Array} - sorted array of expiring titles
+     * @param {Moment} moment instance
+     * @param {Array} titles Netflix titles
+     * @returns {Array} sorted array of expiring titles
      */
     static sortExpiringTitles(moment, titles) {
         const mapped = titles.map(title => {
@@ -274,8 +274,8 @@ class NetflixTitle {
 
     /**
      * Turn Netflix titles into an URL object
-     * @param {object} list - list of Netflix titles
-     * @returns {DOMString} - object URL
+     * @param {object} list list of Netflix titles
+     * @returns {DOMString} object URL
      */
     static getListAsObjectURL(list) {
         const keys = ["title", "releaseYear", "summary", "id", "type", "length"];
@@ -305,12 +305,12 @@ class ActionLinks {
 
     /**
      * Add link
-     * @param {Function} handler - function to call on click
-     * @param {object} data - event data to pass to handler
-     * @param {string} key - translation key for i18next
-     * @param {string} icon - material icon name
-     * @param {object} attrs - object with additional attributes
-     * @param {boolean} prepend - if true, prepend to parent, otherwise append
+     * @param {Function} handler function to call on click
+     * @param {object} data event data to pass to handler
+     * @param {string} key translation key for i18next
+     * @param {string} icon material icon name
+     * @param {object} attrs object with additional attributes
+     * @param {boolean} prepend if true, prepend to parent, otherwise append
      */
     addLink(handler, data, key, icon, attrs, prepend = false) {
         const $ = this.$;
@@ -331,7 +331,7 @@ class ActionLinks {
 
     /**
      * Append actions to parent
-     * @param {object} parent - parent element to append actions
+     * @param {object} parent parent element to append actions
      */
     appendTo(parent) {
         parent.append(this.links);
@@ -345,10 +345,10 @@ class ActionLinks {
 class ExpiringTitlesBuilder {
     /**
      * Construct with instances
-     * @param {jQuery} $ - jQuery instance
-     * @param {i18next} i18next - instance
-     * @param {Moment} moment - instance
-     * @param {Element} parent - parent element of the main div
+     * @param {jQuery} $ jQuery instance
+     * @param {i18next} i18next instance
+     * @param {Moment} moment instance
+     * @param {Element} parent parent element of the main div
      */
     constructor($, i18next, moment, parent) {
         this.$ = $;
@@ -405,7 +405,7 @@ class ExpiringTitlesBuilder {
 
     /**
      * Add row with number of expiring titles
-     * @param {number} length - number of expiring titles
+     * @param {number} length number of expiring titles
      */
     addCountExpirationRow(length) {
         const $ = this.$;
@@ -424,7 +424,7 @@ class ExpiringTitlesBuilder {
 
     /**
      * Add row with My List info
-     * @param {object} mylist - 'My List' object
+     * @param {object} mylist 'My List' object
      */
     addMyListInfo(mylist) {
         const $ = this.$;
@@ -453,7 +453,7 @@ class ExpiringTitlesBuilder {
 
     /**
      * Add row with expiring title information
-     * @param {object} title - Netflix title object
+     * @param {object} title Netflix title object
      */
     addNetflixTitleRow(title) {
         const $ = this.$;
