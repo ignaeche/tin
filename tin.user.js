@@ -70,6 +70,18 @@ class FalcorWrapper {
     }
 
     /**
+     * Get title and year of a Netflix title
+     * @param {string} titleId Netflix title id
+     */
+    getTitleInfo(titleId) {
+        return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["title", "releaseYear"]]).then(response => {
+            const video = response.json.videos[titleId];
+            delete video.$__path;
+            return video;
+        });
+    }
+
+    /**
      * Get number of seasons of a Netflix title
      * @param {string} titleId Netflix title id
      */
@@ -772,7 +784,7 @@ const CSS = `
         // Modify "My List"; add Expiring Titles box and add searches to every item
         modifyMyList()
         // Add searches in title pages
-        modifyTitlePages()
+        modifyTitlePage()
         // Add titles under images in "More Like This"
         modifyMoreLikeThisTab()
         // Show completed percentage, remaining minutes, episode average
@@ -837,20 +849,20 @@ const CSS = `
         }
     }
 
-    function modifyTitlePages() {
-        $(".jawBone").each(function() {
-            const titleElement = $(".title", this);
-            const title = titleElement.text() || $("img", titleElement).attr("alt");
-            const year = $(".year", this).text();
-
-            // If already present, remove and reappend if titles don't match (after a loading state this makes the links correct)
-            if ($(`.${SELECTORS.SEARCHES}`, this).length) {
-                if ($(`.${SELECTORS.SEARCHES}`, this).attr(ATTRS.TITLE) === title) return;
-                $(`.${SELECTORS.SEARCHES}`, this).remove();
-            }
-
-            const searchLinks = NetflixTitle.makeSearchLinks($, title, year);
-            $(this).prepend(searchLinks)
+    /**
+     * Modify overview of Netflix titles
+     * Get title ID from DOM, get info from Falcor and append search links
+     */
+    function modifyTitlePage() {
+        $(".jawBoneContainer").each((_, container) => {
+            const titleId = container.id;
+            falcor.getTitleInfo(titleId).then(({ title, releaseYear }) => {
+                $(`.${SELECTORS.SEARCHES}`, container).remove();
+                $(".jawBone", container).prepend(NetflixTitle.makeSearchLinks($, title, releaseYear));
+            })
+            .catch(err => {
+                console.error("TIN: could not fetch title data", err);
+            });
         });
     }
 
