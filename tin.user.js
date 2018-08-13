@@ -313,7 +313,7 @@ class ActionLinks {
      * @param {boolean} prepend if true, prepend to parent, otherwise append
      */
     addLink(handler, data, key, icon, attrs, prepend = false) {
-        const $ = this.$;
+        const { $ } = this;
         const anchor = $("<a>", {
             class: SELECTORS.ACTION_LINK,
             html: this.i18next.t(key)
@@ -363,7 +363,7 @@ class ExpiringTitlesBuilder {
      * Otherwise empty it
      */
     emptyMainDiv() {
-        const $ = this.$;
+        const { $ } = this;
         const div = $(`#${SELECTORS.EXPIRING_TITLES}`);
         if (div.length) {
             this.div = div;
@@ -379,7 +379,7 @@ class ExpiringTitlesBuilder {
      * If loading indicator is in Netflix page, show list refreshing mesage
      */
     showIfRefreshing() {
-        const $ = this.$;
+        const { $ } = this;
         if ($(".galleryLoader, .rowListSpinLoader").length) {
             this.emptyMainDiv();
             $("<div>", {
@@ -394,7 +394,7 @@ class ExpiringTitlesBuilder {
      * If an error occurred, alert the user
      */
     showError() {
-        const $ = this.$;
+        const { $ } = this;
         this.emptyMainDiv();
         $("<div>", {
             class: SELECTORS.EXPIRING_TITLES_ROW,
@@ -408,8 +408,7 @@ class ExpiringTitlesBuilder {
      * @param {number} length number of expiring titles
      */
     addCountExpirationRow(length) {
-        const $ = this.$;
-        const i18next = this.i18next;
+        const { $, i18next } = this;
 
         const options = { count: length };
         if (length == 0) options.context = 'empty';
@@ -427,8 +426,7 @@ class ExpiringTitlesBuilder {
      * @param {object} mylist 'My List' object
      */
     addMyListInfo(mylist) {
-        const $ = this.$;
-        const i18next = this.i18next;
+        const { $, i18next } = this;
 
         const options = { count: mylist.length };
         if (mylist.length == 0) options.context = 'empty';
@@ -456,9 +454,7 @@ class ExpiringTitlesBuilder {
      * @param {object} title Netflix title object
      */
     addNetflixTitleRow(title) {
-        const $ = this.$;
-        const i18next = this.i18next;
-        const moment = this.moment;
+        const { $, i18next, moment } = this;
         const item = $("<div>", { class: SELECTORS.EXPIRING_TITLES_ROW })
 
         // Add search links and category icon
