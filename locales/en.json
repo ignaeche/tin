@@ -27,8 +27,11 @@
         "error": "There was an error fetching your list. Please try again."
     },
     "season": {
+        "episodes": "{{count}} episode",
+        "episodes_plural": "{{count}} episodes",
         "percentage": "{{percentage}}% completed",
-        "remaining": "{{remaining}} out of {{total}} minutes remaining",
+        "remaining": "{{remaining}} out of {{runtime}} minutes remaining",
+        "remainingHours": "{{hours}} hours remaining",
         "average": "{{average}}-minute episode average"
     }
 }

@@ -27,8 +27,11 @@
         "error": "Ocurrió un error consultando tu lista. Por favor, intenta nuevamente."
     },
     "season": {
+        "episodes": "{{count}} episodio",
+        "episodes_plural": "{{count}} episodios",
         "percentage": "{{percentage}}% completado",
-        "remaining": "{{remaining}} de {{total}} minutos restantes",
+        "remaining": "{{remaining}} de {{runtime}} minutos restantes",
+        "remainingHours": "{{hours}} horas restantes",
         "average": "{{average}} minutos promedio por episodio"
     }
 }

@@ -68,6 +68,44 @@ class FalcorWrapper {
             return { mylist, expiring }
         });
     }
+
+    /**
+     * Get number of seasons of a Netflix title
+     * @param {string} titleId Netflix title id
+     */
+    getNumberOfSeasons(titleId) {
+        return this.unsafeWindow.pathEvaluator.getValue(["videos", titleId, "seasonList", "summary", "length"]);
+    }
+
+    /**
+     * Get list of seasons of a Netflix title
+     * @param {string} titleId Netflix title id
+     */
+    getSeasonList(titleId) {
+        return this.getNumberOfSeasons(titleId)
+        .then(length => {
+            return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["seasonList"], { from: 0, to: length - 1}, "summary"]);
+        })
+        .then(response => {
+            const { seasonList } = response.json.videos[titleId];
+            delete seasonList.$__path;
+            return seasonList;
+        });
+    }
+
+    /**
+     * Get list of episodes of a season of a Netflix title
+     * @param {string} season season id of a Netflix title, retrieved from getSeasonList
+     */
+    getEpisodesOfSeason(season) {
+        const { id, length } = season;
+        return this.unsafeWindow.pathEvaluator.get(["seasons", id, "episodes", {from: 0, to: length - 1}, ["bookmarkPosition", "runtime", "summary"]])
+        .then(response => {
+            const { episodes } = response.json.seasons[id];
+            delete episodes.$__path;
+            return episodes;
+        });
+    }
 };
 
 /**
@@ -462,6 +500,110 @@ class ExpiringTitlesBuilder {
 }
 
 /**
+ * Class to build stats for a season in a Netflix title
+ */
+class SeasonStatsBuilder {
+    /**
+     * Construct with instances
+     * @param {jQuery} $ jQuery instance
+     * @param {i18next} i18next instance
+     * @param {Moment} moment instance
+     * @param {Element} pane Episodes pane of title
+     */
+    constructor($, i18next, moment, pane) {
+        this.$ = $;
+        this.i18next = i18next;
+        this.moment = moment;
+        this.pane = pane;
+    }
+
+    /**
+     * Get the current season object selected in pane
+     * @param {object} seasonList list of seasons of a Netflix title
+     * @returns {object} season
+     */
+    getCurrentSeason(seasonList) {
+        const { $, pane } = this;
+        const currentSeason = $(".single-season-label", pane).text() || $(".nfDropDown > .label > .sub-menu-link", pane).text();
+        return Object.values(seasonList).find(s => s.summary.name === currentSeason);
+    }
+
+    /**
+     * Calculate remaining time and add to object
+     * @param {object} episode episode in a season
+     */
+    static addRemaining(episode) {
+        episode.correctedBookmark = Math.min(Math.max(episode.bookmarkPosition, 0), episode.runtime);
+        episode.remaining = episode.runtime - episode.correctedBookmark;
+        return episode;
+    }
+
+    /**
+     * Sum of all episodes runtime and remaining time (in seconds)
+     * @param {Array} list array of episodes with remaining time
+     */
+    static getTotals(list) {
+        return list.reduce((acc, cur) => {
+            acc.runtime = acc.runtime + cur.runtime;
+            acc.remaining = acc.remaining + cur.remaining;
+            return acc;
+        }, { runtime: 0, remaining: 0 });
+    }
+
+    /**
+     * Get stats of season
+     * @param {object} season season object of Netflix title
+     * @param {object} episodes episodes object corresponding to season
+     */
+    getStats(season, episodes) {
+        const { moment } = this;
+
+        const list = Object.values(episodes).map(SeasonStatsBuilder.addRemaining);
+        const totals = SeasonStatsBuilder.getTotals(list);
+
+        return {
+            // format to minutes
+            runtime: moment.duration(totals.runtime, 'seconds').format('m'),
+            remaining: moment.duration(totals.remaining, 'seconds').format('m'),
+            // format remaining time to hours:minutes
+            hours: moment.duration(totals.remaining, 'seconds').format('HH:mm', { trim: false }),
+            // average episode length in minutes
+            average: moment.duration(Math.round(totals.runtime / season.summary.length), 'seconds').format('m'),
+            // calculate completed percentage
+            percentage: ((totals.runtime - totals.remaining) / totals.runtime * 100).toFixed(2)
+        };
+    }
+
+    /**
+     * Remove stat elements
+     */
+    clearStats() {
+        this.$(`.${SELECTORS.SEASON_STAT}`, this.pane).remove();
+        return this;
+    }
+
+    /**
+     * Add stat div before episode list (next to episode dropdown/label)
+     * @param {string} key i18next translation key
+     * @param {object} data i18next interpolation data
+     * @param {object} title object w/ key and data for i18next
+     */
+    addStat(key, data, title) {
+        const { $, i18next, pane } = this;
+        const stat = $("<div>", {
+            class: SELECTORS.SEASON_STAT,
+            text: i18next.t(key, data)
+        });
+        // If given, add title attribute with alternative text
+        if (title) {
+            stat.attr('title', i18next.t(title.key, title.data));
+        }
+        stat.insertBefore($(".episodeWrapper", pane));
+        return this;
+    }
+}
+
+/**
  * To add a search link, add another entry to SEARCHES with a unique key:
  * key {
  *      name: String        // Name of site, shown in tooltip
@@ -542,7 +684,7 @@ const SELECTORS = {
     TITLE: "tin-title",
     CAT_ICON: "tin-cat-icon",
     DURATION: "tin-duration",
-    TOTAL_DURATION: "tin-total-duration",
+    SEASON_STAT: "tin-season-stat",
     SEARCHES: "tin-searches",
     ACTION_LINK: "tin-action-link",
     ACTIONS: "tin-actions",
@@ -566,7 +708,7 @@ const CSS = `
 
 .${SELECTORS.CAT_ICON} { vertical-align: inherit; margin-right: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px; border-radius: 5px; }
 .${SELECTORS.DURATION} { display: inline-block; vertical-align: inherit; margin-left: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px 5px; border-radius: 5px; font-size: 0.8vw; }
-.${SELECTORS.TOTAL_DURATION} { display: inline-block; color: #FFFFFF; margin-left: 25px; }
+.${SELECTORS.SEASON_STAT} { display: inline-block; color: #FFFFFF; margin-left: 1.5vw; }
 
 .${SELECTORS.SEARCHES} { display: inline; margin-right: 10px; vertical-align: middle; }
 .${SELECTORS.SEARCHES} a { margin: 0 1px; vertical-align: inherit; }
@@ -733,39 +875,33 @@ const CSS = `
         });
     }
 
+    /**
+     * Modify 'Episodes' tab
+     * Get title ID from DOM, then get season list from Falcor,
+     * then get episodes from current season from Falcor, calculate and show stats
+     */
     function modifyEpisodesTab() {
-        // Work in progress
-        return;
-        // Get total watch time of season
-        $(".jawBone #pane-Episodes").each(function() {
-            var durations = []
-            // Retrieve all episodes in a season
-            $(".episodeWrapper .slider-item", this).each(function() {
-                // Get progress through progress bar width
-                var progress = 0;
-                if ($(".progress-bar", this).length) {
-                    progress = parseInt($(".progress-completed", this).attr("style").match(/\d+/)[0])
-                }
-                // Get minutes
-                var minutes = parseInt($(".duration", this).text())
-                // Calculate remaining
-                var remaining = Math.ceil(minutes * (100 - progress) / 100)
-                durations.push({ remaining, minutes })
+        $(".jawBone #pane-Episodes").each((_, pane) => {
+            const titleId = $(pane).closest(".jawBoneContainer")[0].id;
+            const builder = new SeasonStatsBuilder($, i18next, moment, pane)
+                .clearStats();
+
+            falcor.getSeasonList(titleId).then(seasonList => {
+                const season = builder.getCurrentSeason(seasonList);
+                return Promise.all([season, falcor.getEpisodesOfSeason(season.summary)]);
+            })
+            .then(([season, episodes]) => {
+                const { runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
+                builder
+                    .clearStats()
+                    .addStat('season.episodes', { count: season.summary.length })
+                    .addStat('season.percentage', { percentage: Math.round(percentage) }, { key: 'season.percentage', data: { percentage: +(percentage) } })
+                    .addStat('season.remainingHours', { hours }, { key: 'season.remaining', data: { remaining, runtime } })
+                    .addStat('season.average', { average });
+            })
+            .catch(err => {
+                console.error("TIN: could not fetch episodes", err);
             });
-            // Reduce into totals
-            var remaining = durations.reduce((acc, cur) => acc + cur.remaining, 0)
-            var total = durations.reduce((acc, cur) => acc + cur.minutes, 0)
-            var average = Math.ceil(total / durations.length)
-            var percentage = Math.floor((total - remaining) / total * 100)
-
-            // Remove and check for valid data
-            $(`.${SELECTORS.TOTAL_DURATION}`, this).remove();
-            if (!durations.length || isNaN(remaining)) return true;
-
-            // Append
-            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: i18next.t('season.percentage', { percentage }) }))
-            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: i18next.t('season.remaining', { remaining, total }) }))
-            $(".episodeWrapper", this).before($("<div>", { class: SELECTORS.TOTAL_DURATION, text: i18next.t('season.average', { average }) }))
         });
     }
 })();
