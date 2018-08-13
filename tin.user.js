@@ -866,24 +866,21 @@ const CSS = `
         });
     }
 
+    /**
+     * Modify 'More Like This' tab
+     * Add the title's name under artwork w/ link of overview page
+     */
     function modifyMoreLikeThisTab() {
-        $(".jawBone #pane-MoreLikeThis .slider-item").each(function() {
-            try {
-                // If title already present, return
-                if ($(`.${SELECTORS.TITLE}`, this).length) return true;
-                // Get title from artwork
-                const title = $(".video-artwork", this).attr("alt")
-                // Decode embedded JSON to extract video_id
-                const content = JSON.parse(decodeURIComponent($(".ptrack-content", this).attr("data-ui-tracking-context")))
-                // Create anchor
-                const a = $("<a>", { href: `/title/${content.video_id}`, text: title })
-                const span = $("<span>", { class: SELECTORS.TITLE })
-                span.append(a)
-
-                $(".meta", this).prepend(span)
-            } catch(e) {
-                return true;
-            }
+        $(".jawBone #pane-MoreLikeThis .slider-item").each((_, item) => {
+            // Don't append if already present
+            if ($(`.${SELECTORS.TITLE}`, item).length) return true;
+            // Get title info
+            const title = $("div[aria-label]", item).attr("aria-label");
+            const id = JSON.parse(decodeURIComponent($(".ptrack-content", item).attr("data-ui-tracking-context"))).video_id;
+            // Append title
+            const span = $("<span>", { class: SELECTORS.TITLE });
+            span.append(NetflixTitle.makeTitleLink($, { title, summary: { id } }));
+            $(".meta", item).prepend(span);
         });
     }
 
