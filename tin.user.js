@@ -210,7 +210,7 @@ class NetflixTitle {
         const titleAndYear = title.concat(` (${year})`)
 
         // Create 'links' div
-        const links = $("<div>", { class: SELECTORS.SEARCHES, [ATTRS.TITLE]: title, [ATTRS.YEAR]: year })
+        const links = $("<div>", { class: SELECTORS.SEARCHES });
 
         // For every key, create a search link
         $.each(SEARCHES, (key, item) => {
@@ -697,11 +697,6 @@ const SELECTORS = {
     ACTION_LINK: "tin-action-link",
     ACTIONS: "tin-actions",
     IMG_PREFIX: "tin-img-"
-}
-
-const ATTRS = {
-    TITLE: "tin-title",
-    YEAR: "tin-year"
 }
 
 const CSS = `
