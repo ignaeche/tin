@@ -74,7 +74,19 @@ class FalcorWrapper {
      * @param {string} titleId Netflix title id
      */
     getTitleInfo(titleId) {
-        return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["title", "releaseYear"]]).then(response => {
+        return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["title", "releaseYear", "summary"]]).then(response => {
+            const video = response.json.videos[titleId];
+            delete video.$__path;
+            return video;
+        });
+    }
+
+    /**
+     * Get watch info of a Netflix title
+     * @param {string} titleId Netflix title id
+     */
+    getTitleWatchInfo(titleId) {
+        return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["runtime", "bookmarkPosition", "creditsOffset"]]).then(response => {
             const video = response.json.videos[titleId];
             delete video.$__path;
             return video;
@@ -191,12 +203,12 @@ class NetflixTitle {
     }
 
     /**
-     * Determine if title is a TV show
+     * Determine if title is a movie
      * @param {object} title Netflix title
      * @returns {boolean}
      */
-    static isTVShow(title) {
-        return (title.summary.type === "show");
+    static isMovie(title) {
+        return (title.summary.type === "movie");
     }
 
     /**
@@ -694,6 +706,7 @@ const SELECTORS = {
     DURATION: "tin-duration",
     SEASON_STAT: "tin-season-stat",
     SEARCHES: "tin-searches",
+    WATCHED: "tin-watched",
     ACTION_LINK: "tin-action-link",
     ACTIONS: "tin-actions",
     IMG_PREFIX: "tin-img-"
@@ -841,15 +854,40 @@ const CSS = `
     }
 
     /**
+     * Modify 'Overview' tab
+     * Show if a movie has been watched before
+     * @param {Element} container jawBone container element
+     * @param {object} title Netflix title object
+     */
+    function modifyOverviewTab(container, title) {
+        const overviewPane = $("#pane-Overview", container);
+        if (overviewPane.length && NetflixTitle.isMovie(title)) {
+            falcor.getTitleWatchInfo(title.summary.id).then(info => {
+                // Don't append if already present
+                if ($(`.${SELECTORS.WATCHED}`, overviewPane).length) return;
+                const span = $("<span>", { class: SELECTORS.WATCHED });
+                // If the bookmark position is after the credits offset, then the title has been watched
+                info.bookmarkPosition >= info.creditsOffset ? span.text(i18next.t('overview.watched')) : span.css('display', 'none');
+                $(".meta", overviewPane).prepend(span);
+            })
+            .catch(err => {
+                console.error("TIN: could not fetch watch info", err);
+            });
+        }
+    }
+
+    /**
      * Modify overview of Netflix titles
      * Get title ID from DOM, get info from Falcor and append search links
      */
     function modifyTitlePage() {
         $(".jawBoneContainer").each((_, container) => {
             const titleId = container.id;
-            falcor.getTitleInfo(titleId).then(({ title, releaseYear }) => {
-                $(`.${SELECTORS.SEARCHES}`, container).remove();
-                $(".jawBone", container).prepend(NetflixTitle.makeSearchLinks($, title, releaseYear));
+            falcor.getTitleInfo(titleId).then(title => {
+                !$(`.${SELECTORS.SEARCHES}`, container).length
+                    && $(".jawBone", container).prepend(NetflixTitle.makeSearchLinks($, title.title, title.releaseYear));
+
+                modifyOverviewTab(container, title);
             })
             .catch(err => {
                 console.error("TIN: could not fetch title data", err);
