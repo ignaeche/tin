@@ -538,6 +538,30 @@ class SeasonStatsBuilder {
     }
 
     /**
+     * Remove (if present) and insert container before episode list (next to dropdown/label)
+     * with ID from season object in attribute.
+     * @param {object} season season of a Netflix title
+     */
+    makeContainer(season) {
+        const { $, pane } = this;
+        $(`.${SELECTORS.SEASON_STATS_CONTAINER}`, pane).remove();
+        this.container = $("<div>", { class: SELECTORS.SEASON_STATS_CONTAINER, [ATTRS.SEASON]: season.summary.id });
+        this.container.insertBefore($(".episodeWrapper", pane));
+        return this;
+    }
+
+    /**
+     * Get current container and check if the season attribute matches the given season ID
+     * @param {object} season season of a Netflix title
+     * @returns {boolean}
+     */
+    containerHasSeason(season) {
+        const { $, pane } = this;
+        const container = $(`.${SELECTORS.SEASON_STATS_CONTAINER}`, pane);
+        return container.length && container.attr(ATTRS.SEASON) == season.summary.id;
+    }
+
+    /**
      * Get the current season object selected in pane
      * @param {object} seasonList list of seasons of a Netflix title
      * @returns {object} season
@@ -595,21 +619,13 @@ class SeasonStatsBuilder {
     }
 
     /**
-     * Remove stat elements
-     */
-    clearStats() {
-        this.$(`.${SELECTORS.SEASON_STAT}`, this.pane).remove();
-        return this;
-    }
-
-    /**
-     * Add stat div before episode list (next to episode dropdown/label)
+     * Add stat div to stats container
      * @param {string} key i18next translation key
      * @param {object} data i18next interpolation data
      * @param {object} title object w/ key and data for i18next
      */
     addStat(key, data, title) {
-        const { $, i18next, pane } = this;
+        const { $, i18next, container } = this;
         const stat = $("<div>", {
             class: SELECTORS.SEASON_STAT,
             text: i18next.t(key, data)
@@ -618,7 +634,7 @@ class SeasonStatsBuilder {
         if (title) {
             stat.attr('title', i18next.t(title.key, title.data));
         }
-        stat.insertBefore($(".episodeWrapper", pane));
+        stat.appendTo(container);
         return this;
     }
 }
@@ -705,11 +721,16 @@ const SELECTORS = {
     CAT_ICON: "tin-cat-icon",
     DURATION: "tin-duration",
     SEASON_STAT: "tin-season-stat",
+    SEASON_STATS_CONTAINER: "tin-season-stats-container",
     SEARCHES: "tin-searches",
     WATCHED: "tin-watched",
     ACTION_LINK: "tin-action-link",
     ACTIONS: "tin-actions",
     IMG_PREFIX: "tin-img-"
+}
+
+const ATTRS = {
+    SEASON: "data-tin-season"
 }
 
 const CSS = `
@@ -725,6 +746,7 @@ const CSS = `
 .${SELECTORS.CAT_ICON} { vertical-align: inherit; margin-right: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px; border-radius: 5px; }
 .${SELECTORS.DURATION} { display: inline-block; vertical-align: inherit; margin-left: 10px; background-color: ${COLORS.PAGE_BG}; padding: 2px 5px; border-radius: 5px; font-size: 0.8vw; }
 .${SELECTORS.SEASON_STAT} { display: inline-block; color: #FFFFFF; margin-left: 1.5vw; }
+.${SELECTORS.SEASON_STATS_CONTAINER} { display: inline-block; }
 
 .${SELECTORS.SEARCHES} { display: inline; margin-right: 10px; vertical-align: middle; }
 .${SELECTORS.SEARCHES} a { margin: 0 1px; vertical-align: inherit; }
@@ -921,22 +943,32 @@ const CSS = `
     function modifyEpisodesTab() {
         $(".jawBone #pane-Episodes").each((_, pane) => {
             const titleId = $(pane).closest(".jawBoneContainer")[0].id;
-            const builder = new SeasonStatsBuilder($, i18next, moment, pane)
-                .clearStats();
+            const builder = new SeasonStatsBuilder($, i18next, moment, pane);
 
             falcor.getSeasonList(titleId).then(seasonList => {
                 const season = builder.getCurrentSeason(seasonList);
-                return Promise.all([season, falcor.getEpisodesOfSeason(season.summary)]);
+                if (!builder.containerHasSeason(season)) {
+                    // Displayed season does not match
+                    builder.makeContainer(season);
+                    return Promise.all([season, falcor.getEpisodesOfSeason(season.summary)]);
+                } else {
+                    // Season matches, reject and do nothing
+                    return Promise.reject();
+                }
             })
-            .then(([season, episodes]) => {
-                const { runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
-                builder
-                    .clearStats()
-                    .addStat('season.episodes', { count: season.summary.length })
-                    .addStat('season.percentage', { percentage: Math.round(percentage) }, { key: 'season.percentage', data: { percentage: +(percentage) } })
-                    .addStat('season.remainingHours', { hours }, { key: 'season.remaining', data: { remaining, runtime } })
-                    .addStat('season.average', { average });
-            })
+            .then(
+                // Promise resolved, add stats
+                ([season, episodes]) => {
+                    const { runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
+                    builder
+                        .addStat('season.episodes', { count: season.summary.length })
+                        .addStat('season.percentage', { percentage: Math.round(percentage) }, { key: 'season.percentage', data: { percentage: +(percentage) } })
+                        .addStat('season.remainingHours', { hours }, { key: 'season.remaining', data: { remaining, runtime } })
+                        .addStat('season.average', { average });
+                },
+                // Promise rejected, do nothing
+                () => {}
+            )
             .catch(err => {
                 console.error("TIN: could not fetch episodes", err);
             });
