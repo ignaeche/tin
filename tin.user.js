@@ -949,37 +949,31 @@ const CSS = `
      * then get episodes from current season from Falcor, calculate and show stats
      */
     function modifyEpisodesTab() {
-        $(".jawBone #pane-Episodes").each((_, pane) => {
+        $(".jawBone #pane-Episodes").each(async (_, pane) => {
             const titleId = $(pane).closest(".jawBoneContainer")[0].id;
             const builder = new SeasonStatsBuilder($, i18next, moment, pane);
 
-            falcor.getSeasonList(titleId).then(seasonList => {
+            try {
+                const seasonList = await falcor.getSeasonList(titleId);
                 const season = builder.getCurrentSeason(seasonList);
-                if (!builder.containerHasSeason(season)) {
-                    // Displayed season does not match
-                    builder.makeContainer(season);
-                    return Promise.all([season, falcor.getEpisodesOfSeason(season.summary)]);
-                } else {
-                    // Season matches, reject and do nothing
-                    return Promise.reject();
-                }
-            })
-            .then(
-                // Promise resolved, add stats
-                ([season, episodes]) => {
-                    const { runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
-                    builder
-                        .addStat('season.episodes', { count: season.summary.length })
-                        .addStat('season.percentage', { percentage: Math.round(percentage) }, { key: 'season.percentage', data: { percentage: +(percentage) } })
-                        .addStat('season.remainingHours', { hours }, { key: 'season.remaining', data: { remaining, runtime } })
-                        .addStat('season.average', { average });
-                },
-                // Promise rejected, do nothing
-                () => {}
-            )
-            .catch(err => {
+
+                // If container has same season ID, do nothing
+                if (builder.containerHasSeason(season)) return;
+
+                // Initialize container before next Falcor call
+                builder.makeContainer(season);
+
+                const episodes = await falcor.getEpisodesOfSeason(season.summary);
+
+                const { runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
+                builder
+                    .addStat('season.episodes', { count: season.summary.length })
+                    .addStat('season.percentage', { percentage: Math.round(percentage) }, { key: 'season.percentage', data: { percentage: +(percentage) } })
+                    .addStat('season.remainingHours', { hours }, { key: 'season.remaining', data: { remaining, runtime } })
+                    .addStat('season.average', { average });
+            } catch (err) {
                 console.error("TIN: could not fetch episodes", err);
-            });
+            }
         });
     }
 })();
