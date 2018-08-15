@@ -123,7 +123,7 @@ class FalcorWrapper {
      */
     getEpisodesOfSeason(season) {
         const { id, length } = season;
-        return this.unsafeWindow.pathEvaluator.get(["seasons", id, "episodes", {from: 0, to: length - 1}, ["bookmarkPosition", "runtime", "summary"]])
+        return this.unsafeWindow.pathEvaluator.get(["seasons", id, "episodes", {from: 0, to: length - 1}, ["bookmarkPosition", "creditsOffset", "runtime", "summary"]])
         .then(response => {
             const { episodes } = response.json.seasons[id];
             delete episodes.$__path;
@@ -582,7 +582,8 @@ class SeasonStatsBuilder {
      */
     static addRemaining(episode) {
         episode.correctedBookmark = Math.min(Math.max(episode.bookmarkPosition, 0), episode.runtime);
-        episode.remaining = episode.runtime - episode.correctedBookmark;
+        // If bookmark position is after credits offset, then episode is done and remaining time should be 0
+        episode.remaining = episode.correctedBookmark < episode.creditsOffset ? episode.runtime - episode.correctedBookmark : 0;
         return episode;
     }
 
