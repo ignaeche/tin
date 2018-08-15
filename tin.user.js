@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tiny Improvements for Netflix (TIN)
 // @namespace    https://github.com/ignaeche
-// @version      1.13
+// @version      1.13.1
 // @description  Improve Netflix by viewing expiring titles at the top of your list, adding search links and more...
 // @author       Ignacio
 // @match        http://*.netflix.com/*
@@ -387,7 +387,7 @@ class ExpiringTitlesBuilder {
      * @param {number} length length of 'My List'
      */
     containerHasListLength(length) {
-        const container = $(`#${SELECTORS.EXPIRING_TITLES}`);
+        const container = this.$(`#${SELECTORS.EXPIRING_TITLES}`);
         return container.length && container.attr(ATTRS.LENGTH) == length;
     }
 
