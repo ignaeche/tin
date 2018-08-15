@@ -370,21 +370,25 @@ class ExpiringTitlesBuilder {
     }
 
     /**
-     * Empty main expiring titles div
-     * Create and prepend to parent element if not present in page
-     * Otherwise empty it
+     * Remove container and make a new one and reappend to parent
+     * with new list length attribute value
+     * @param {number} length length of 'My List'
      */
-    emptyMainDiv() {
+    makeContainer(length = -1) {
         const { $ } = this;
-        const div = $(`#${SELECTORS.EXPIRING_TITLES}`);
-        if (div.length) {
-            this.div = div;
-            div.empty();
-        } else {
-            this.div = this.$("<div>", { id: SELECTORS.EXPIRING_TITLES });
-            this.parent.prepend(this.div)
-        }
+        $(`#${SELECTORS.EXPIRING_TITLES}`).remove();
+        this.container = $("<div>", { id: SELECTORS.EXPIRING_TITLES, [ATTRS.LENGTH]: length });
+        this.parent.prepend(this.container);
         return this;
+    }
+
+    /**
+     * Get current container and check if list length matches
+     * @param {number} length length of 'My List'
+     */
+    containerHasListLength(length) {
+        const container = $(`#${SELECTORS.EXPIRING_TITLES}`);
+        return container.length && container.attr(ATTRS.LENGTH) == length;
     }
 
     /**
@@ -393,11 +397,11 @@ class ExpiringTitlesBuilder {
     showIfRefreshing() {
         const { $ } = this;
         if ($(".galleryLoader, .rowListSpinLoader").length) {
-            this.emptyMainDiv();
+            this.makeContainer();
             $("<div>", {
                 class: SELECTORS.EXPIRING_TITLES_ROW,
                 text: this.i18next.t('list.refreshing')
-            }).appendTo(this.div);
+            }).appendTo(this.container);
         }
         return this;
     }
@@ -407,11 +411,11 @@ class ExpiringTitlesBuilder {
      */
     showError() {
         const { $ } = this;
-        this.emptyMainDiv();
+        this.makeContainer();
         $("<div>", {
             class: SELECTORS.EXPIRING_TITLES_ROW,
             text: this.i18next.t('list.error')
-        }).appendTo(this.div);
+        }).appendTo(this.container);
         return this;
     }
 
@@ -428,7 +432,7 @@ class ExpiringTitlesBuilder {
         $("<div>", {
             class: SELECTORS.EXPIRING_TITLES_ROW,
             text: i18next.t('list.title', options)
-        }).appendTo(this.div);
+        }).appendTo(this.container);
 
         return this;
     }
@@ -448,7 +452,7 @@ class ExpiringTitlesBuilder {
             class: SELECTORS.EXPIRING_TITLES_ROW,
             html: `${i18next.t('list.stats', options)} (${i18next.t('list.categoryCount', { stats })})`
         });
-        row.appendTo(this.div);
+        row.appendTo(this.container);
 
         // Export List link
         if (mylist.length) {
@@ -513,7 +517,7 @@ class ExpiringTitlesBuilder {
         }
 
         // Append to main div
-        this.div.append(item);
+        this.container.append(item);
 
         return this;
     }
@@ -730,7 +734,8 @@ const SELECTORS = {
 }
 
 const ATTRS = {
-    SEASON: "data-tin-season"
+    SEASON: "data-tin-season",
+    LENGTH: "data-tin-length"
 }
 
 const CSS = `
@@ -845,33 +850,36 @@ const CSS = `
      * Get expiring titles from Falcor and build Expiring Titles box
      * And append search links to every item if manual ordering is on
      */
-    function modifyMyList() {
+    async function modifyMyList() {
         // Check if in 'My List'
         if (document.URL.includes('my-list')) {
+            appendSearchLinksToMyListItems();
+
             const parent = $(".gallery, .rowListContainer");
             const builder = new ExpiringTitlesBuilder($, i18next, moment, parent)
                 .showIfRefreshing();
-            falcor.getMyListLength().then(length => {
-                // Get 'My List' length. If empty, handle in rejection callback; otherwise fetch list
-                return (length ? falcor.getExpiringTitles() : Promise.reject(length));
-            })
-            .then(
-                // Promise resolved, 'My List' is not empty
-                ({ mylist, expiring }) => {
+
+            try {
+                const length = await falcor.getMyListLength();
+                // If container has list with this length, do nothing
+                if (builder.containerHasListLength(length)) return;
+
+                if (length) {
+                    // 'My List' is not empty
+                    const { mylist, expiring } = await falcor.getExpiringTitles();
                     const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
-                    builder.emptyMainDiv()
+                    builder.makeContainer(length)
                         .addMyListInfo(mylist)
                         .addCountExpirationRow(sortedExpiring.length);
                     $.each(sortedExpiring, (_, title) => builder.addNetflixTitleRow(title));
-                },
-                // Promise rejected, 'My List' is empty
-                length => builder.emptyMainDiv().addMyListInfo({ length })
-            )
-            .catch(err => {
+                } else {
+                    // 'My List' is empty
+                    builder.makeContainer(length).addMyListInfo({ length });
+                }
+            } catch(err) {
                 builder.showError();
                 console.error("TIN: could not fetch list", err);
-            });
-            appendSearchLinksToMyListItems();
+            }
         }
     }
 
