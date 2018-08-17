@@ -388,7 +388,7 @@ class ExpiringTitlesBuilder {
      */
     containerHasListLength(length) {
         const container = this.$(`#${SELECTORS.EXPIRING_TITLES}`);
-        return container.length && container.attr(ATTRS.LENGTH) == length;
+        return container.length && container.attr(ATTRS.LENGTH) == length && !container.is(':empty');
     }
 
     /**
