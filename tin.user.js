@@ -130,6 +130,18 @@ class FalcorWrapper {
             return episodes;
         });
     }
+
+    /**
+     * Get status information for list of title ids
+     * @param {Array} ids array of ids for Netflix titles
+     */
+    getStatusOfTitles(ids) {
+        return this.unsafeWindow.pathEvaluator.get(["videos", ids, ["summary", "availabilityEndDateNear", "title", "queue", "bookmarkPosition", "creditsOffset"]]).then(response => {
+            const { videos } = response.json;
+            delete videos.$__path;
+            return videos;
+        });
+    }
 };
 
 /**
@@ -667,6 +679,103 @@ class SeasonStatsBuilder {
 }
 
 /**
+ * Class to handle title cards overlays
+ */
+class TitleCardOverlay {
+    /**
+     * Construct instance
+     * @param {jQuery} $ jQuery instance
+     * @param {Function} callback function to attach to mouseleave event on title card
+     */
+    constructor($, callback) {
+        this.$ = $;
+        this.callback = callback;
+    }
+
+    /**
+     * Get icon names and modifying classes for overlay
+     * @param {object} title Netflix title object
+     */
+    static getTitleStatus(title) {
+        const status = {
+            icons: [],
+            classes: []
+        }
+        // Title is in queue
+        if (title.queue.inQueue) {
+            status.icons.push('check');
+        }
+        // Title has been watched
+        if (title.bookmarkPosition >= title.creditsOffset) {
+            status.icons.push('done_all');
+            status.classes.push(SELECTORS.WATCHED_CARD);
+        }
+        // Title has expiration date
+        if (title.availabilityEndDateNear) {
+            status.icons.push('schedule');
+        }
+        return status;
+    }
+
+    /**
+     * Add overlay div to title card
+     * @param {Element} item slider item holding title card
+     * @param {number} id Netflix title id
+     * @returns {boolean} true if overlay was added, false if exists
+     */
+    addOverlay(item, id) {
+        const { $ } = this;
+        // If overlay is present, do nothing
+        if ($(`.${SELECTORS.OVERLAY}`, item).length) return false;
+
+        // Create overlay and append
+        const overlay = $("<div>", { class: SELECTORS.OVERLAY });
+        overlay.data('icons', 0);
+        overlay.appendTo($(".boxart-container", item));
+
+        // Add callback for single card modification on mouseleave
+        $(".title-card-container", item).addClass(SELECTORS.OVERLAY_WRAPPER)
+        .on('mouseleave', { id }, this.callback);
+
+        return true;
+    }
+
+    /**
+     * Add icons and classes to card overlay
+     * @param {object} title Netflix title object
+     */
+    modifyCardOverlay(title) {
+        const { $ } = this;
+        // Get icons and classes for the overlay
+        const { icons, classes } = TitleCardOverlay.getTitleStatus(title);
+
+        // Escape quotes and select label (child of title card container div)
+        const label = $(`.title-card-container [aria-label="${NetflixTitle.escapeQuotes(title.title)}"]`);
+
+        // Add wrapper classes to title card (if any)
+        label.closest('.title-card-container').addClass(classes.join(' '));
+
+        // Since each title can appear multiple times in a page, iterate over elements
+        label.each((_, element) => {
+            // Get overlay for this card
+            const overlay = $(`.${SELECTORS.OVERLAY}`, element);
+            // If tabindex is 0, card is visible
+            const tabIndex = $(element).attr('tabindex');
+            // If number of icons has changed and is visible, update overlay
+            if (overlay.data('icons') != icons.length && tabIndex == '0') {
+                overlay.data('icons', icons.length);
+                overlay.empty();
+                $.each(icons, (_, name) => $("<i>", { class: "material-icons", text: name }).appendTo(overlay));
+            }
+            // Card is not visible, remove icons
+            if (tabIndex == '-1') {
+                overlay.empty();
+            }
+        });
+    }
+}
+
+/**
  * To add a search link, add another entry to SEARCHES with a unique key:
  * key {
  *      name: String        // Name of site, shown in tooltip
@@ -753,7 +862,10 @@ const SELECTORS = {
     WATCHED: "tin-watched",
     ACTION_LINK: "tin-action-link",
     ACTIONS: "tin-actions",
-    IMG_PREFIX: "tin-img-"
+    IMG_PREFIX: "tin-img-",
+    OVERLAY: "tin-overlay",
+    OVERLAY_WRAPPER: "tin-overlay-wrapper",
+    WATCHED_CARD: "tin-watched-card"
 }
 
 const ATTRS = {
@@ -796,6 +908,20 @@ const CSS = `
 .match-score-wrapper.no-rating { display: none; }
 .jawBoneContainer .jawBoneCommon .simsLockup .meta .match-score-wrapper { width: auto; }
 .episodesContainer .single-season-label { display: inline-block; }
+
+.${SELECTORS.WATCHED_CARD} .boxart-container img { transition: filter 1s ease; }
+.${SELECTORS.WATCHED_CARD} [tabindex='0'] img, .${SELECTORS.WATCHED_CARD} .bob-card img { filter: brightness(0.5) blur(1px); }
+
+.${SELECTORS.OVERLAY} { position: absolute; top: 0; z-index: 1; display: block; width: 100%; height: 100%; opacity: 1; }
+.${SELECTORS.OVERLAY} { transition: opacity 0.4s linear 0.4s; }
+.${SELECTORS.OVERLAY_WRAPPER}.is-bob-open .${SELECTORS.OVERLAY}, .${SELECTORS.OVERLAY}:hover { opacity: 0; transition: opacity 0.4s linear; }
+.${SELECTORS.OVERLAY} i { animation: fadeIn 1s ease; color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
+    padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080); }
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
 `;
 
 (function() {
@@ -843,6 +969,8 @@ const CSS = `
         modifyMoreLikeThisTab()
         // Show completed percentage, remaining minutes, episode average
         modifyEpisodesTab()
+        // Add icons and dim watched movies
+        modifyTitleCards();
     }).observe(document.body, { attributes: true, subtree: true })
 
     /**
@@ -1002,5 +1130,60 @@ const CSS = `
                 console.error("TIN: could not fetch episodes", err);
             }
         });
+    }
+
+    /**
+     * Callback for mouseleave event of a title card
+     * @param {Event} event
+     */
+    function modifySingleCardCallback(event) {
+        setTimeout(async () => {
+            try {
+                const { id } = event.data;
+                const statusList = await falcor.getStatusOfTitles(id);
+                new TitleCardOverlay($).modifyCardOverlay(statusList[id]);
+            } catch (err) {
+                console.error("TIN: could not modify card", err);
+            }
+        }, 1000);
+    }
+
+    /**
+     * Modify title cards in slider rows by adding an overlay
+     * Collect title IDs from items and jawBone containers,
+     * send to Falcor and modify overlays
+     */
+    async function modifyTitleCards() {
+        try {
+            const overlay = new TitleCardOverlay($, modifySingleCardCallback);
+            const ids = [];
+
+            // Get ids from slider items
+            $(".slider-item").each((_, item) => {
+                try {
+                    const id = NetflixTitle.getVideoIdFromAttribute($, item);
+                    if (id && overlay.addOverlay(item, id)) {
+                        ids.push(id);
+                    }
+                } catch (err) { /* ignore */ }
+            });
+            // Get open jawBone ids
+            $(".jawBoneContainer").each((_, container) => {
+                ids.push(container.id);
+            });
+
+            // If no ids collected, do nothing
+            if (!ids.length) return;
+
+            // Get summaries from Falcor
+            const statusList = await falcor.getStatusOfTitles(ids);
+
+            // Modify overlays
+            $.each(statusList, (_, title) => {
+                overlay.modifyCardOverlay(title);
+            });
+        } catch (err) {
+            console.error("TIN: could not modify cards", err);
+        }
     }
 })();
