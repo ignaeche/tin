@@ -144,7 +144,7 @@ class TinFunctions {
      */
     static viewInList(event) {
         const { title, id } = event.data;
-        const selectors = `[aria-label='${title}'], div[data-id='${id}']`;
+        const selectors = `[aria-label='${NetflixTitle.escapeQuotes(title)}'], div[data-id='${id}']`;
         document.querySelector(selectors).scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -316,6 +316,14 @@ class NetflixTitle {
             return JSON.parse(json).video_id;
         }
         return 0;
+    }
+
+    /**
+     * Escape quotes in string
+     * @param {string} string string to escape
+     */
+    static escapeQuotes(string) {
+        return string.replace(/"/g, '\\"');
     }
 }
 
