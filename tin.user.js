@@ -303,6 +303,20 @@ class NetflixTitle {
         const blob = new Blob([json], { type: 'application/json' });
         return URL.createObjectURL(blob);
     }
+
+    /**
+     * Extract video id from attribute of element with ptrack-content class
+     * @param {jQuery} $ jQuery instance
+     * @param {Element} item parent element with a ptrack-content
+     * @returns {number} video id; 0 if not found
+     */
+    static getVideoIdFromAttribute($, item) {
+        if ($(".ptrack-content", item).length) {
+            const json = decodeURIComponent($(".ptrack-content", item).attr("data-ui-tracking-context"));
+            return JSON.parse(json).video_id;
+        }
+        return 0;
+    }
 }
 
 /**
@@ -932,15 +946,19 @@ const CSS = `
      */
     function modifyMoreLikeThisTab() {
         $(".jawBone #pane-MoreLikeThis .slider-item").each((_, item) => {
+            // If this class is present, then titles are loading
+            if ($(".pulsate-transparent", item).length) return true;
             // Don't append if already present
             if ($(`.${SELECTORS.TITLE}`, item).length) return true;
             // Get title info
             const title = $("div[aria-label]", item).attr("aria-label");
-            const id = JSON.parse(decodeURIComponent($(".ptrack-content", item).attr("data-ui-tracking-context"))).video_id;
+            const id = NetflixTitle.getVideoIdFromAttribute($, item);
             // Append title
-            const span = $("<span>", { class: SELECTORS.TITLE });
-            span.append(NetflixTitle.makeTitleLink($, { title, summary: { id } }));
-            $(".meta", item).prepend(span);
+            if (id) {
+                const span = $("<span>", { class: SELECTORS.TITLE });
+                span.append(NetflixTitle.makeTitleLink($, { title, summary: { id } }));
+                $(".meta", item).prepend(span);
+            }
         });
     }
 
