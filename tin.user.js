@@ -924,9 +924,9 @@ const CSS = `
 .${SELECTORS.WATCHED_CARD} .boxart-container img { transition: filter 0.4s ease; }
 .${SELECTORS.WATCHED_CARD} [tabindex='0'] img, .${SELECTORS.WATCHED_CARD} .bob-card img { filter: brightness(0.5) blur(1px); }
 
-.${SELECTORS.OVERLAY} { position: absolute; top: 0; z-index: 1; display: block; width: 100%; height: 100%; opacity: 1; }
-.${SELECTORS.OVERLAY} { transition: opacity 0.4s linear 0.4s; }
-.${SELECTORS.OVERLAY_WRAPPER}.is-bob-open .${SELECTORS.OVERLAY}, .${SELECTORS.OVERLAY}:hover { opacity: 0; transition: opacity 0.4s linear; }
+.${SELECTORS.OVERLAY} { position: absolute; top: 0; z-index: 1; display: block; width: 100%; height: 100%; }
+.${SELECTORS.OVERLAY} { opacity: 1; transition: opacity 0.4s linear 0.6s; }
+.${SELECTORS.OVERLAY_WRAPPER}:hover .${SELECTORS.OVERLAY} { opacity: 0; transition: opacity 0.4s linear; }
 .${SELECTORS.OVERLAY} i { color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
     padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080);
     opacity: 0; overflow: hidden; }
