@@ -690,29 +690,35 @@ class TitleCardOverlay {
     constructor($, callback) {
         this.$ = $;
         this.callback = callback;
+        this.icons = {
+            queue: { order: 0, name: 'check' },
+            expires: { order: 1, name: 'schedule' },
+            watched: { order: 2, name: 'done_all' }
+        };
+        this.sortedIcons = Object.values(this.icons).sort((a, b) => a.order - b.order);
     }
 
     /**
      * Get icon names and modifying classes for overlay
      * @param {object} title Netflix title object
      */
-    static getTitleStatus(title) {
+    getTitleStatus(title) {
         const status = {
             icons: [],
             classes: []
         }
         // Title is in queue
         if (title.queue.inQueue) {
-            status.icons.push('check');
+            status.icons.push(this.icons.queue.name);
         }
         // Title has been watched
         if (title.bookmarkPosition >= title.creditsOffset) {
-            status.icons.push('done_all');
+            status.icons.push(this.icons.watched.name);
             status.classes.push(SELECTORS.WATCHED_CARD);
         }
         // Title has expiration date
         if (title.availabilityEndDateNear) {
-            status.icons.push('schedule');
+            status.icons.push(this.icons.expires.name);
         }
         return status;
     }
@@ -732,6 +738,8 @@ class TitleCardOverlay {
         const overlay = $("<div>", { class: SELECTORS.OVERLAY });
         overlay.data('icons', 0);
         overlay.appendTo($(".boxart-container", item));
+        // Add icons and hide them
+        $.each(this.sortedIcons, (_, icon) => $("<i>", { class: "material-icons", text: icon.name }).hide().appendTo(overlay));
 
         // Add callback for single card modification on mouseleave
         $(".title-card-container", item).addClass(SELECTORS.OVERLAY_WRAPPER)
@@ -747,7 +755,7 @@ class TitleCardOverlay {
     modifyCardOverlay(title) {
         const { $ } = this;
         // Get icons and classes for the overlay
-        const { icons, classes } = TitleCardOverlay.getTitleStatus(title);
+        const { icons, classes } = this.getTitleStatus(title);
 
         // Escape quotes and select label (child of title card container div)
         const label = $(`.title-card-container [aria-label="${NetflixTitle.escapeQuotes(title.title)}"]`);
@@ -764,12 +772,16 @@ class TitleCardOverlay {
             // If number of icons has changed and is visible, update overlay
             if (overlay.data('icons') != icons.length && tabIndex == '0') {
                 overlay.data('icons', icons.length);
-                overlay.empty();
-                $.each(icons, (_, name) => $("<i>", { class: "material-icons", text: name }).appendTo(overlay));
-            }
-            // Card is not visible, remove icons
-            if (tabIndex == '-1') {
-                overlay.empty();
+                $("i", overlay).each((_, icon) => {
+                    // Icon is in list and is hidden, then show
+                    if (icons.includes($(icon).text()) && $(icon).is(':hidden')) {
+                        $(icon).show(100).fadeTo(300, 1);
+                    }
+                    // Icon is not in list and not hidden, then hide
+                    if (!icons.includes($(icon).text()) && !$(icon).is(':hidden')) {
+                        $(icon).fadeTo(300, 0).hide(100);
+                    }
+                });
             }
         });
     }
@@ -909,19 +921,15 @@ const CSS = `
 .jawBoneContainer .jawBoneCommon .simsLockup .meta .match-score-wrapper { width: auto; }
 .episodesContainer .single-season-label { display: inline-block; }
 
-.${SELECTORS.WATCHED_CARD} .boxart-container img { transition: filter 1s ease; }
+.${SELECTORS.WATCHED_CARD} .boxart-container img { transition: filter 0.4s ease; }
 .${SELECTORS.WATCHED_CARD} [tabindex='0'] img, .${SELECTORS.WATCHED_CARD} .bob-card img { filter: brightness(0.5) blur(1px); }
 
 .${SELECTORS.OVERLAY} { position: absolute; top: 0; z-index: 1; display: block; width: 100%; height: 100%; opacity: 1; }
 .${SELECTORS.OVERLAY} { transition: opacity 0.4s linear 0.4s; }
 .${SELECTORS.OVERLAY_WRAPPER}.is-bob-open .${SELECTORS.OVERLAY}, .${SELECTORS.OVERLAY}:hover { opacity: 0; transition: opacity 0.4s linear; }
-.${SELECTORS.OVERLAY} i { animation: fadeIn 1s ease; color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
-    padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080); }
-
-@keyframes fadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-}
+.${SELECTORS.OVERLAY} i { color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
+    padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080);
+    opacity: 0; overflow: hidden; }
 `;
 
 (function() {
