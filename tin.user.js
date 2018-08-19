@@ -136,7 +136,7 @@ class FalcorWrapper {
      * @param {Array} ids array of ids for Netflix titles
      */
     getStatusOfTitles(ids) {
-        return this.unsafeWindow.pathEvaluator.get(["videos", ids, ["summary", "availabilityEndDateNear", "title", "queue", "bookmarkPosition", "creditsOffset"]]).then(response => {
+        return this.unsafeWindow.pathEvaluator.get(["videos", ids, ["summary", "availabilityEndDateNear", "title", "queue", "bookmarkPosition", "creditsOffset", "userRating"]]).then(response => {
             const { videos } = response.json;
             delete videos.$__path;
             return videos;
@@ -693,7 +693,9 @@ class TitleCardOverlay {
         this.icons = {
             queue: { order: 0, name: 'check' },
             expires: { order: 1, name: 'schedule' },
-            watched: { order: 2, name: 'done_all' }
+            watched: { order: 2, name: 'visibility' },
+            like: { order: 3, name: 'thumb_up_alt' },
+            dislike: { order: 4, name: 'thumb_down_alt' }
         };
         this.sortedIcons = Object.values(this.icons).sort((a, b) => a.order - b.order);
     }
@@ -719,6 +721,14 @@ class TitleCardOverlay {
         // Title has expiration date
         if (title.availabilityEndDateNear) {
             status.icons.push(this.icons.expires.name);
+        }
+        // Title has thumbs up
+        if (title.userRating.userRating == 2) {
+            status.icons.push(this.icons.like.name);
+        }
+        // Title has thumbs down
+        if (title.userRating.userRating == 1) {
+            status.icons.push(this.icons.dislike.name);
         }
         return status;
     }
@@ -929,7 +939,7 @@ const CSS = `
 .${SELECTORS.OVERLAY_WRAPPER}:hover .${SELECTORS.OVERLAY} { opacity: 0; transition: opacity 0.4s linear; }
 .${SELECTORS.OVERLAY} i { color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
     padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080);
-    opacity: 0; overflow: hidden; }
+    opacity: 0; overflow: hidden; font-size: 1vw; }
 `;
 
 (function() {
