@@ -744,12 +744,13 @@ class TitleCardOverlay {
         // If overlay is present, do nothing
         if ($(`.${SELECTORS.OVERLAY}`, item).length) return false;
 
-        // Create overlay and append
+        // Create overlay
         const overlay = $("<div>", { class: SELECTORS.OVERLAY });
         overlay.data('icons', 0);
-        overlay.appendTo($(".boxart-container", item));
         // Add icons and hide them
         $.each(this.sortedIcons, (_, icon) => $("<i>", { class: "material-icons", text: icon.name }).hide().appendTo(overlay));
+        // Append after adding icons, tall cards have two boxart containers (one tall, one normal size)
+        overlay.appendTo($(".boxart-container", item));
 
         // Add callback for single card modification on mouseleave
         $(".title-card-container", item).addClass(SELECTORS.OVERLAY_WRAPPER)
