@@ -86,7 +86,7 @@ class FalcorWrapper {
      * @param {string} titleId Netflix title id
      */
     getTitleWatchInfo(titleId) {
-        return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["runtime", "bookmarkPosition", "creditsOffset"]]).then(response => {
+        return this.unsafeWindow.pathEvaluator.get(["videos", titleId, ["bookmarkPosition", "creditsOffset", "runtime", "watched"]]).then(response => {
             const video = response.json.videos[titleId];
             delete video.$__path;
             return video;
@@ -136,7 +136,8 @@ class FalcorWrapper {
      * @param {Array} ids array of ids for Netflix titles
      */
     getStatusOfTitles(ids) {
-        return this.unsafeWindow.pathEvaluator.get(["videos", ids, ["summary", "availabilityEndDateNear", "title", "queue", "bookmarkPosition", "creditsOffset", "userRating"]]).then(response => {
+        const values = ["availabilityEndDateNear", "bookmarkPosition", "creditsOffset", "queue", "summary", "title", "userRating", "watched"];
+        return this.unsafeWindow.pathEvaluator.get(["videos", ids, values]).then(response => {
             const { videos } = response.json;
             delete videos.$__path;
             return videos;
@@ -718,6 +719,11 @@ class TitleCardOverlay {
             status.icons.push(this.icons.watched.name);
             status.classes.push(SELECTORS.WATCHED_CARD);
         }
+        // Show that has been watched at least once (started shows are true, never watched are false)
+        // Movies are always false; that's why previous if is used
+        if (!NetflixTitle.isMovie(title) && title.watched) {
+            status.icons.push(this.icons.watched.name);
+        }
         // Title has expiration date
         if (title.availabilityEndDateNear) {
             status.icons.push(this.icons.expires.name);
@@ -1061,13 +1067,13 @@ const CSS = `
      */
     function modifyOverviewTab(container, title) {
         const overviewPane = $("#pane-Overview", container);
-        if (overviewPane.length && NetflixTitle.isMovie(title)) {
+        if (overviewPane.length) {
             falcor.getTitleWatchInfo(title.summary.id).then(info => {
                 // Don't append if already present
                 if ($(`.${SELECTORS.WATCHED}`, overviewPane).length) return;
                 const span = $("<span>", { class: SELECTORS.WATCHED });
-                // If the bookmark position is after the credits offset, then the title has been watched
-                info.bookmarkPosition >= info.creditsOffset ? span.text(i18next.t('overview.watched')) : span.css('display', 'none');
+                // If the bookmark position is after the credits offset or watched is true (for TV shows), then the title has been watched
+                info.bookmarkPosition >= info.creditsOffset || info.watched ? span.text(i18next.t('overview.watched')) : span.css('display', 'none');
                 $(".meta", overviewPane).prepend(span);
             })
             .catch(err => {
