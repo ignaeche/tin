@@ -4,7 +4,11 @@ Improve your Netflix experience by:
 - viewing expiring titles at the top of your list.
 - knowing how much time it takes to finish the season of any show by going to the `Episodes` tab.
 - knowing how many titles you have in your list (and how many of them are shows or movies).
-- having indicator icons in every title card to know if a title is in your list, if it has an expiration date or if you've seen it before (movies only).
+- having indicator icons in every title card to know if a title...
+  - is in your list.
+  - has an expiration date.
+  - has been watched before (for movies this means it was finished; for TV shows it means it was started, but not necessarily completed).
+  - has been rated with thumbs up or down.
 - having a `Watched` indicator on previously viewed movies.
 - exporting your list to a JSON file.
 - having search links to [IMDb](https://www.imdb.com/), [Wikipedia](https://www.wikipedia.org/) and many others in every title.
