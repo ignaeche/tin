@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tiny Improvements for Netflix (TIN)
 // @namespace    https://github.com/ignaeche
-// @version      1.14.1
+// @version      1.14.2
 // @description  Improve Netflix by viewing expiring titles at the top of your list, adding search links and more...
 // @author       Ignacio
 // @match        http://*.netflix.com/*
@@ -756,7 +756,7 @@ class TitleCardOverlay {
         // Add icons and hide them
         $.each(this.sortedIcons, (_, icon) => $("<i>", { class: "material-icons", text: icon.name }).hide().appendTo(overlay));
         // Append after adding icons, tall cards have two boxart containers (one tall, one normal size)
-        overlay.appendTo($(".boxart-container", item));
+        overlay.appendTo($(".boxart-container, .video-artwork", item));
 
         // Add callback for single card modification on mouseleave
         $(".title-card-container", item).addClass(SELECTORS.OVERLAY_WRAPPER)
@@ -774,8 +774,8 @@ class TitleCardOverlay {
         // Get icons and classes for the overlay
         const { icons, classes } = this.getTitleStatus(title);
 
-        // Escape quotes and select label (child of title card container div)
-        const label = $(`.title-card-container [aria-label="${NetflixTitle.escapeQuotes(title.title)}"]`);
+        // Escape quotes and select label (child of slider item div)
+        const label = $(`.slider-item [aria-label="${NetflixTitle.escapeQuotes(title.title)}"]`);
 
         // Add wrapper classes to title card (if any)
         label.closest('.title-card-container').addClass(classes.join(' '));
@@ -787,7 +787,8 @@ class TitleCardOverlay {
             // If tabindex is 0, card is visible
             const tabIndex = $(element).attr('tabindex');
             // If number of icons has changed and is visible, update overlay
-            if (overlay.data('icons') != icons.length && tabIndex == '0') {
+            // For title cards in 'More Like This', check for simsLockup & !sliderItemHidden class
+            if (overlay.data('icons') != icons.length && (tabIndex == '0' || $(element).filter('.simsLockup').not('.sliderItemHidden').length)) {
                 overlay.data('icons', icons.length);
                 $("i", overlay).each((_, icon) => {
                     // Icon is in list and is hidden, then show
@@ -943,7 +944,7 @@ const CSS = `
 
 .${SELECTORS.OVERLAY} { position: absolute; top: 0; z-index: 1; display: block; width: 100%; height: 100%; }
 .${SELECTORS.OVERLAY} { opacity: 1; transition: opacity 0.4s linear 0.6s; }
-.${SELECTORS.OVERLAY_WRAPPER}:hover .${SELECTORS.OVERLAY} { opacity: 0; transition: opacity 0.4s linear; }
+.${SELECTORS.OVERLAY_WRAPPER}:hover .${SELECTORS.OVERLAY}, .${SELECTORS.OVERLAY}:hover { opacity: 0; transition: opacity 0.4s linear; }
 .${SELECTORS.OVERLAY} i { color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
     padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080);
     opacity: 0; overflow: hidden; font-size: 1vw; }
