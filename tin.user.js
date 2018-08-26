@@ -292,7 +292,7 @@ class NetflixTitle {
         mapped.sort((a, b) => {
             if (a.tinExpireDate.isBefore(b.tinExpireDate)) return -1;
             if (a.tinExpireDate.isAfter(b.tinExpireDate)) return 1;
-            return 0;
+            return a.title.localeCompare(b.title);
         });
         return mapped;
     }
