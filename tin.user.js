@@ -157,7 +157,7 @@ class TinFunctions {
      */
     static viewInList(event) {
         const { title, id } = event.data;
-        const selectors = `[aria-label='${NetflixTitle.escapeQuotes(title)}'], div[data-id='${id}']`;
+        const selectors = `[aria-label="${NetflixTitle.escapeQuotes(title)}"], div[data-id='${id}']`;
         document.querySelector(selectors).scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -408,11 +408,12 @@ class ExpiringTitlesBuilder {
      * Remove container and make a new one and reappend to parent
      * with new list length attribute value
      * @param {number} length length of 'My List'
+     * @param {number} rows number of loaded rows of title cards
      */
-    makeContainer(length = -1) {
+    makeContainer(length = -1, rows = 0) {
         const { $ } = this;
         $(`#${SELECTORS.EXPIRING_TITLES}`).remove();
-        this.container = $("<div>", { id: SELECTORS.EXPIRING_TITLES, [ATTRS.LENGTH]: length });
+        this.container = $("<div>", { id: SELECTORS.EXPIRING_TITLES, [ATTRS.LENGTH]: length, [ATTRS.ROWS]: rows });
         this.parent.prepend(this.container);
         return this;
     }
@@ -420,10 +421,11 @@ class ExpiringTitlesBuilder {
     /**
      * Get current container and check if list length matches
      * @param {number} length length of 'My List'
+     * @param {number} rows number of loaded rows of title cards
      */
-    containerHasListLength(length) {
+    containerHasListLength(length, rows) {
         const container = this.$(`#${SELECTORS.EXPIRING_TITLES}`);
-        return container.length && container.attr(ATTRS.LENGTH) == length && !container.is(':empty');
+        return container.length && container.attr(ATTRS.LENGTH) == length && container.attr(ATTRS.ROWS) == rows && !container.is(':empty');
     }
 
     /**
@@ -439,6 +441,14 @@ class ExpiringTitlesBuilder {
             }).appendTo(this.container);
         }
         return this;
+    }
+
+    /**
+     * Check if loading indicator is still in page
+     */
+    isRefreshing() {
+        const { $ } = this;
+        return $(".galleryLoader, .rowListSpinLoader").length;
     }
 
     /**
@@ -538,10 +548,12 @@ class ExpiringTitlesBuilder {
             id: title.summary.id,
             prompt: i18next.t('actions.removePrompt', { title: title.title })
         };
-        const links = new ActionLinks($, i18next)
-            .appendTo(item)
-            .addLink(TinFunctions.viewInList, eventData, 'actions.viewInList', 'arrow_downward');
+        const links = new ActionLinks($, i18next).appendTo(item);
 
+        // Check if title card or row is present in DOM
+        if ($(`[aria-label="${NetflixTitle.escapeQuotes(title.title)}"], div[data-id='${title.summary.id}']`).length) {
+            links.addLink(TinFunctions.viewInList, eventData, 'actions.viewInList', 'arrow_downward');
+        }
         // If in manual ordering list type, add these action links
         const titleRow = $(`div[data-id='${title.summary.id}']`);
         if (titleRow.length) {
@@ -900,7 +912,8 @@ const SELECTORS = {
 
 const ATTRS = {
     SEASON: "data-tin-season",
-    LENGTH: "data-tin-length"
+    LENGTH: "data-tin-length",
+    ROWS: "data-tin-rows"
 }
 
 const CSS = `
@@ -1038,14 +1051,15 @@ const CSS = `
 
             try {
                 const length = await falcor.getMyListLength();
-                // If container has list with this length, do nothing
-                if (builder.containerHasListLength(length)) return;
+                const rows = $(".rowContainer").length;
+                // If container has list with this length and number of rows or list is still refreshing, do nothing
+                if (builder.containerHasListLength(length, rows) || builder.isRefreshing()) return;
 
                 if (length) {
                     // 'My List' is not empty
                     const { mylist, expiring } = await falcor.getExpiringTitles();
                     const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
-                    builder.makeContainer(length)
+                    builder.makeContainer(length, rows)
                         .addMyListInfo(mylist)
                         .addCountExpirationRow(sortedExpiring.length);
                     $.each(sortedExpiring, (_, title) => builder.addNetflixTitleRow(title));
