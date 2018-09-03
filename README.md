@@ -13,6 +13,7 @@ Improve your Netflix experience by:
 - exporting your list to a JSON file.
 - having search links to [IMDb](https://www.imdb.com/), [Wikipedia](https://www.wikipedia.org/) and many others in every title.
 - having a link to the overview page of a title in the `More Like This` tab.
+- knowing how many new titles were added in the last week with a helpful icon.
 
 ## Installation
 
