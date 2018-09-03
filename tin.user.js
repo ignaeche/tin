@@ -143,6 +143,14 @@ class FalcorWrapper {
             return videos;
         });
     }
+
+    /**
+     * Get number of new titles added in the last week
+     * @returns {Promise}
+     */
+    getAddedLastWeekLength() {
+        return this.unsafeWindow.pathEvaluator.getValue(["contentRefreshRecentlyAdded", "length"]);
+    }
 };
 
 /**
@@ -182,12 +190,20 @@ class TinFunctions {
     }
 
     /**
+     * Refresh 'My List' by invalidating falcor cache and refreshing reactApp
+     */
+    static forceRefresh() {
+        unsafeWindow.pathEvaluator.invalidate(["mylist"]);
+        unsafeWindow.reactApp.refresh();
+    }
+
+    /**
      * Export My List to file
      * @param {Event} event
      */
     static exportList(event) {
-        const { mylist } = event.data;
-        this.href = NetflixTitle.getListAsObjectURL(mylist);
+        const { list } = event.data;
+        this.href = NetflixTitle.getListAsObjectURL(list);
     }
 }
 
@@ -303,11 +319,11 @@ class NetflixTitle {
      * @returns {DOMString} object URL
      */
     static getListAsObjectURL(list) {
-        const keys = ["title", "releaseYear", "summary", "id", "type", "length"];
+        const keys = ["title", "releaseYear", "summary", "id", "type", "length", "tinExpireDate", "seasonCount"];
         const replacer = (key, value) => {
             // Only keep keys which are numbers or included in keys
             if (!isNaN(key) || keys.includes(key)) {
-                return value;
+                return value || undefined;
             }
             return undefined;
         };
@@ -466,18 +482,26 @@ class ExpiringTitlesBuilder {
 
     /**
      * Add row with number of expiring titles
-     * @param {number} length number of expiring titles
+     * @param {Array} expiring list of expiring titles
      */
-    addCountExpirationRow(length) {
+    addCountExpirationRow(expiring) {
         const { $, i18next } = this;
+        const length = expiring.length;
 
         const options = { count: length };
         if (length == 0) options.context = 'empty';
 
-        $("<div>", {
+        const row = $("<div>", {
             class: SELECTORS.EXPIRING_TITLES_ROW,
             text: i18next.t('list.title', options)
         }).appendTo(this.container);
+
+        if (length) {
+            const filename = `${i18next.t('profileName', { lng: 'common' })}_expiring_${this.moment().format('YYYYMMDDTHHmm')}.json`;
+            new ActionLinks($, i18next)
+                .addLink(TinFunctions.exportList, { list: expiring }, 'actions.exportExpiring', 'save_alt', { download: filename })
+                .appendTo(row);
+        }
 
         return this;
     }
@@ -503,7 +527,8 @@ class ExpiringTitlesBuilder {
         if (mylist.length) {
             const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
             new ActionLinks($, i18next)
-                .addLink(TinFunctions.exportList, { mylist }, 'actions.export', 'save_alt', { download: filename })
+                .addLink(TinFunctions.forceRefresh, null, 'actions.forceRefresh', 'refresh')
+                .addLink(TinFunctions.exportList, { list: mylist }, 'actions.export', 'save_alt', { download: filename })
                 .appendTo(row);
         }
 
@@ -907,7 +932,9 @@ const SELECTORS = {
     IMG_PREFIX: "tin-img-",
     OVERLAY: "tin-overlay",
     OVERLAY_WRAPPER: "tin-overlay-wrapper",
-    WATCHED_CARD: "tin-watched-card"
+    WATCHED_CARD: "tin-watched-card",
+    MYLIST_TAB_NUMBER: "tin-mylist-tab-number",
+    JUST_ADDED: "tin-just-added"
 }
 
 const ATTRS = {
@@ -961,6 +988,13 @@ const CSS = `
 .${SELECTORS.OVERLAY} i { color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
     padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080);
     opacity: 0; overflow: hidden; font-size: 1vw; }
+
+#${SELECTORS.MYLIST_TAB_NUMBER} { margin-left: 5px; padding: 3px 5px; border: 2px solid #e5e5e5;
+    border-radius: 14px; transition: border-color 0.4s ease; opacity: 0; font-weight: 700; }
+.current #${SELECTORS.MYLIST_TAB_NUMBER} { border-color: #FFFFFF; }
+.navigation-tab a:hover:not(.current) #${SELECTORS.MYLIST_TAB_NUMBER} { border-color: #b3b3b3; }
+
+.${SELECTORS.JUST_ADDED} { opacity: 0; }
 `;
 
 (function() {
@@ -1010,6 +1044,9 @@ const CSS = `
         modifyEpisodesTab()
         // Add icons and dim watched movies
         modifyTitleCards();
+        // Modify navigation
+        modifyNavigationTab();
+        addJustAddedIcon();
     }).observe(document.body, { attributes: true, subtree: true })
 
     /**
@@ -1061,7 +1098,7 @@ const CSS = `
                     const sortedExpiring = NetflixTitle.sortExpiringTitles(moment, expiring);
                     builder.makeContainer(length, rows)
                         .addMyListInfo(mylist)
-                        .addCountExpirationRow(sortedExpiring.length);
+                        .addCountExpirationRow(sortedExpiring);
                     $.each(sortedExpiring, (_, title) => builder.addNetflixTitleRow(title));
                 } else {
                     // 'My List' is empty
@@ -1224,6 +1261,52 @@ const CSS = `
             });
         } catch (err) {
             console.error("TIN: could not modify cards", err);
+        }
+    }
+
+    /**
+     * Add 'My List' length to link in navigation tab
+     */
+    async function modifyNavigationTab() {
+        try {
+            const length = await falcor.getMyListLength();
+            const element = $(`#${SELECTORS.MYLIST_TAB_NUMBER}`);
+            // If number is present, then check if it changed and refresh if necessary
+            if (element.length) {
+                if (element.data('length') == length) return;
+                element.data('length', length);
+                // Fade out, change text and fade in
+                element.fadeTo(400, 0, function() {
+                    $(this).text(length).fadeTo(400, 1);
+                });
+                return;
+            }
+            // Append div with list length to link
+            const div = $("<div>", { id: SELECTORS.MYLIST_TAB_NUMBER, ['data-length']: length, text: length });
+            div.appendTo('.tabbed-primary-navigation li:last-child a');
+            div.fadeTo(400, 1);
+        } catch (err) {
+
+        }
+    }
+
+    /**
+     * Add new titles icon linking to 'Just Added' with number of titles in title text
+     */
+    async function addJustAddedIcon() {
+        try {
+            const length = await falcor.getAddedLastWeekLength();
+            // If icon present or no new titles, do nothing
+            if ($(`.${SELECTORS.JUST_ADDED}`).length || !length) return;
+            // Append icon as last child of secondary navigation
+            const div = $("<div>", { class: `nav-element ${SELECTORS.JUST_ADDED}` });
+            const anchor = $("<a>", { href: '/browse/just-added', title: i18next.t('justAdded', { count: length }) });
+            const icon = $("<i>", { class: "material-icons", text: "new_releases" });
+            div.append(anchor.append(icon));
+            div.insertAfter($(".secondary-navigation > div:last-child"));
+            div.fadeTo(400, 1);
+        } catch (err) {
+            
         }
     }
 })();

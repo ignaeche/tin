@@ -8,7 +8,9 @@
         "viewInList": "View in List",
         "removeFromList": "Remove from List",
         "removePrompt": "Are you sure you want to remove {{title}}?",
-        "export": "Export List"
+        "export": "Export List",
+        "exportExpiring": "Export Expiring Titles",
+        "forceRefresh": "Force Refresh"
     },
     "list": {
         "stats_empty": "You have no titles in your list",
@@ -36,5 +38,7 @@
     },
     "overview": {
         "watched": "Watched"
-    }
+    },
+    "justAdded": "{{count}} new title",
+    "justAdded_plural": "{{count}} new titles"
 }
