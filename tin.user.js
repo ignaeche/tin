@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tiny Improvements for Netflix (TIN)
 // @namespace    https://github.com/ignaeche
-// @version      1.15
+// @version      1.15.1
 // @description  Improve Netflix by viewing expiring titles at the top of your list, adding search links and more...
 // @author       Ignacio
 // @match        http://*.netflix.com/*
@@ -1026,8 +1026,9 @@ const CSS = `
         console.log('TIN: i18next loaded successfully!')
     });
 
-    i18next.changeLanguage(unsafeWindow.netflix.notification.constants.locale)
-    moment.locale(unsafeWindow.netflix.notification.constants.locale)
+    const locale = unsafeWindow.netflix.reactContext.models.consolidatedLogging.data.loggingConstants.locale;
+    i18next.changeLanguage(locale);
+    moment.locale(locale);
 
     const falcor = new FalcorWrapper(unsafeWindow);
 
