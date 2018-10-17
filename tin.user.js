@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tiny Improvements for Netflix (TIN)
 // @namespace    https://github.com/ignaeche
-// @version      1.15.1
+// @version      1.15.2
 // @description  Improve Netflix by viewing expiring titles at the top of your list, adding search links and more...
 // @author       Ignacio
 // @match        http://*.netflix.com/*
@@ -644,7 +644,7 @@ class SeasonStatsBuilder {
      */
     getCurrentSeason(seasonList) {
         const { $, pane } = this;
-        const currentSeason = $(".single-season-label", pane).text() || $(".nfDropDown > .label > .sub-menu-link", pane).text();
+        const currentSeason = $(".single-season-label", pane).text() || $(".nfDropDown > .label", pane).text();
         return Object.values(seasonList).find(s => s.summary.name === currentSeason);
     }
 
