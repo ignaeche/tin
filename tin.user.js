@@ -1028,6 +1028,10 @@ const CSS = `
 
     const locale = unsafeWindow.netflix.reactContext.models.consolidatedLogging.data.loggingConstants.locale;
     i18next.changeLanguage(locale);
+    // Use en-gb as locale for moment in case of locale usage of en-DE in Netflix, to support the date format DD/MM/YYYY
+    moment.defineLocale("en-DE", {
+        parentLocale: "en-gb"
+    });
     moment.locale(locale);
 
     const falcor = new FalcorWrapper(unsafeWindow);
