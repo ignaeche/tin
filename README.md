@@ -42,6 +42,10 @@ If you want to add your language to the script, feel free to send a pull request
 
 Feel free to fork it, send pull requests or create issues.
 
+### Contributors
+
+- [irgendwie](https://github.com/irgendwie)
+
 ## License
 
 [MIT License](LICENSE)
