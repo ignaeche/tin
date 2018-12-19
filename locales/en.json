@@ -31,6 +31,7 @@
     "season": {
         "episodes": "{{count}} episode",
         "episodes_plural": "{{count}} episodes",
+        "episodesAvailable": "{{playable}} out of {{count}} episodes available",
         "percentage": "{{percentage}}% completed",
         "remaining": "{{remaining}} out of {{runtime}} minutes remaining",
         "remainingHours": "{{hours}} hours remaining",

@@ -123,7 +123,7 @@ class FalcorWrapper {
      */
     getEpisodesOfSeason(season) {
         const { id, length } = season;
-        return this.unsafeWindow.pathEvaluator.get(["seasons", id, "episodes", {from: 0, to: length - 1}, ["bookmarkPosition", "creditsOffset", "runtime", "summary"]])
+        return this.unsafeWindow.pathEvaluator.get(["seasons", id, "episodes", {from: 0, to: length - 1}, ["bookmarkPosition", "creditsOffset", "runtime", "summary", "availability"]])
         .then(response => {
             const { episodes } = response.json.seasons[id];
             delete episodes.$__path;
@@ -679,17 +679,23 @@ class SeasonStatsBuilder {
     getStats(season, episodes) {
         const { moment } = this;
 
-        const list = Object.values(episodes).map(SeasonStatsBuilder.addRemaining);
+        // Filter out unavailable episodes (weekly releases may have these)
+        // Then add remaining time to each episode
+        const list = Object.values(episodes)
+            .filter(e => e.availability.isPlayable)
+            .map(SeasonStatsBuilder.addRemaining);
         const totals = SeasonStatsBuilder.getTotals(list);
 
         return {
+            // number of playable episodes
+            playable: list.length,
             // format to minutes
             runtime: moment.duration(totals.runtime, 'seconds').format('m'),
             remaining: moment.duration(totals.remaining, 'seconds').format('m'),
             // format remaining time to hours:minutes
             hours: moment.duration(totals.remaining, 'seconds').format('HH:mm', { trim: false }),
             // average episode length in minutes
-            average: moment.duration(Math.round(totals.runtime / season.summary.length), 'seconds').format('m'),
+            average: moment.duration(Math.round(totals.runtime / list.length), 'seconds').format('m'),
             // calculate completed percentage
             percentage: ((totals.runtime - totals.remaining) / totals.runtime * 100).toFixed(2)
         };
@@ -1202,9 +1208,14 @@ const CSS = `
 
                 const episodes = await falcor.getEpisodesOfSeason(season.summary);
 
-                const { runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
+                const { playable, runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
+                // If the number of available episodes is less than the season total, show how many are playable
+                if (playable < season.summary.length) {
+                    builder.addStat('season.episodesAvailable', { playable, count: season.summary.length });
+                } else {
+                    builder.addStat('season.episodes', { count: season.summary.length });
+                }
                 builder
-                    .addStat('season.episodes', { count: season.summary.length })
                     .addStat('season.percentage', { percentage: Math.round(percentage) }, { key: 'season.percentage', data: { percentage: +(percentage) } })
                     .addStat('season.remainingHours', { hours }, { key: 'season.remaining', data: { remaining, runtime } })
                     .addStat('season.average', { average });
