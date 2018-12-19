@@ -673,10 +673,9 @@ class SeasonStatsBuilder {
 
     /**
      * Get stats of season
-     * @param {object} season season object of Netflix title
      * @param {object} episodes episodes object corresponding to season
      */
-    getStats(season, episodes) {
+    getStats(episodes) {
         const { moment } = this;
 
         // Filter out unavailable episodes (weekly releases may have these)
@@ -1208,7 +1207,7 @@ const CSS = `
 
                 const episodes = await falcor.getEpisodesOfSeason(season.summary);
 
-                const { playable, runtime, remaining, hours, average, percentage } = builder.getStats(season, episodes);
+                const { playable, runtime, remaining, hours, average, percentage } = builder.getStats(episodes);
                 // If the number of available episodes is less than the season total, show how many are playable
                 if (playable < season.summary.length) {
                     builder.addStat('season.episodesAvailable', { playable, count: season.summary.length });
