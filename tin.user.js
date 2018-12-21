@@ -260,7 +260,7 @@ class NetflixTitle {
                 query = query.replace(/\s/gi, '+')
             }
             const link = $("<a>", { href: item.url.replace('%s', query), target: "_blank" })
-            link.append($("<img>", { class: `${SELECTORS.IMG_PREFIX}${key}`, title: item.name }))
+            link.append($("<div>", { class: `${SELECTORS.IMG_PREFIX}${key}`, title: item.name }))
             links.append(link)
         });
         return links;
@@ -965,13 +965,13 @@ const CSS = `
 
 .${SELECTORS.SEARCHES} { display: inline; margin-right: 10px; vertical-align: middle; }
 .${SELECTORS.SEARCHES} a { margin: 0 1px; vertical-align: inherit; }
-.${SELECTORS.SEARCHES} img { background-color: ${COLORS.IMG_BG}; padding: 1px; border-radius: 100%; border: 1px solid ${COLORS.EXP_BG}; transition: border 0.4s ease-in-out; }
-.${SELECTORS.SEARCHES} img:hover { border-color: ${COLORS.IMG_BG}; }
+.${SELECTORS.SEARCHES} div { display: inline; background-color: ${COLORS.IMG_BG}; padding: 1px; border-radius: 100%; border: 1px solid ${COLORS.EXP_BG}; transition: border 0.4s ease-in-out; }
+.${SELECTORS.SEARCHES} div:hover { border-color: ${COLORS.IMG_BG}; }
 
 .title .${SELECTORS.SEARCHES} { display: block; margin: 2px 0 0 0; }
 .jawBone .${SELECTORS.SEARCHES} { display: block; margin: 0 0 5px 0; }
-.title .${SELECTORS.SEARCHES} img, .jawBone .${SELECTORS.SEARCHES} img { border: 1px solid ${COLORS.PAGE_BG}; }
-.title .${SELECTORS.SEARCHES} img:hover, .jawBone .${SELECTORS.SEARCHES} img:hover { border-color: ${COLORS.IMG_BG}; }
+.title .${SELECTORS.SEARCHES} div, .jawBone .${SELECTORS.SEARCHES} div { border: 1px solid ${COLORS.PAGE_BG}; }
+.title .${SELECTORS.SEARCHES} div:hover, .jawBone .${SELECTORS.SEARCHES} div:hover { border-color: ${COLORS.IMG_BG}; }
 
 .${SELECTORS.ACTIONS} { float: right; }
 .${SELECTORS.ACTION_LINK}, .${SELECTORS.ACTION_LINK} i { font-size: 0.7vw; }
