@@ -10,6 +10,7 @@
         "removePrompt": "¿Está seguro que desea remover {{title}}?",
         "export": "Exportar Lista",
         "exportExpiring": "Exportar Títulos por Expirar",
+        "downloadActivity": "Descargar Actividad",
         "forceRefresh": "Forzar Recarga"
     },
     "list": {
@@ -39,6 +40,26 @@
     },
     "overview": {
         "watched": "Visto"
+    },
+    "modals": {
+        "buttons": {
+            "downloadViewingActivity": "Descargar Actividad de Visualización",
+            "downloadRatingHistory": "Descargar Historial de Calificaciones",
+            "cancel": "Cancelar",
+            "close": "Cerrar",
+            "save": "Guardar"
+        },
+        "choose": {
+            "title": "Descargar tu actividad de Netflix",
+            "text": "Puedes descargar tu actividad de visualización e historial de calificaciones en formato JSON. Esto puede tardar algunos segundos."
+        },
+        "download": {
+            "title": "Descargando&hellip;"
+        },
+        "done": {
+            "title": "¡Listo!",
+            "text": "Si no pudiste guardar el archivo, lo puedes guardar nuevamente mediante el botón '$t(modals.buttons.save)'."
+        }
     },
     "justAdded": "{{count}} título nuevo",
     "justAdded_plural": "{{count}} títulos nuevos"

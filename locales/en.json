@@ -10,6 +10,7 @@
         "removePrompt": "Are you sure you want to remove {{title}}?",
         "export": "Export List",
         "exportExpiring": "Export Expiring Titles",
+        "downloadActivity": "Download Activity",
         "forceRefresh": "Force Refresh"
     },
     "list": {
@@ -39,6 +40,26 @@
     },
     "overview": {
         "watched": "Watched"
+    },
+    "modals": {
+        "buttons": {
+            "downloadViewingActivity": "Download Viewing Activity",
+            "downloadRatingHistory": "Download Rating History",
+            "cancel": "Cancel",
+            "close": "Close",
+            "save": "Save"
+        },
+        "choose": {
+            "title": "Download your Netflix activity",
+            "text": "You can download your complete viewing activity and rating history in JSON format. Please be aware the download may take a few seconds."
+        },
+        "download": {
+            "title": "Downloading&hellip;"
+        },
+        "done": {
+            "title": "Done!",
+            "text": "If you missed the Save window, you can save the file again with '$t(modals.buttons.save)'."
+        }
     },
     "justAdded": "{{count}} new title",
     "justAdded_plural": "{{count}} new titles"

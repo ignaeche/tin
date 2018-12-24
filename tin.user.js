@@ -395,6 +395,123 @@ class TinFunctions {
 }
 
 /**
+ * Class to show download modals
+ */
+class Modals {
+    /**
+     * Construct with instances
+     * @param {i18next} i18next instance
+     * @param {moment} moment instance
+     */
+    constructor(i18next, moment) {
+        this.i18next = i18next;
+        this.moment = moment;
+    }
+
+    /**
+     * Return default modal using Tingle
+     * @param {Object} options extra options
+     */
+    static newModal(options) {
+        const defaultOptions = {
+            footer: true,
+            stickyFooter: true,
+            closeMethods: ['overlay', 'escape', 'button'],
+            cssClass: [SELECTORS.MODAL, 'netflix-sans-font-loaded']
+        };
+        return new tingle.modal(Object.assign(defaultOptions, options));
+    }
+
+    /**
+     * Open modal to choose which activity to download
+     */
+    choose() {
+        const { i18next } = this;
+        const modal = Modals.newModal();
+        modal.setContent(`<h3>${i18next.t('modals.choose.title')}</h3><p>${i18next.t('modals.choose.text')}</p>`);
+        modal.addFooterBtn(i18next.t('modals.buttons.downloadViewingActivity'), 'tingle-btn tingle-btn--primary tingle-btn--pull-right', async () => {
+            modal.close();
+            await this.download(ViewingActivityDownloader);
+        });
+        modal.addFooterBtn(i18next.t('modals.buttons.downloadRatingHistory'), 'tingle-btn tingle-btn--primary tingle-btn--pull-right', async () => {
+            modal.close();
+            await this.download(RatingHistoryDownloader);
+        });
+        modal.open();
+    }
+
+    /**
+     * Open modal to show download progress of activity chosen
+     * @param {Class} downloaderClass class name of specific NetworkClientDownloader
+     */
+    async download(downloaderClass) {
+        const { i18next } = this;
+        // Cancel token to stop download
+        const token = new Token().setToken('cancel', false);
+        // Prepare modal
+        const modal = Modals.newModal({
+            closeMethods: ['button'],
+            onClose: function() {
+                token.setToken('cancel', true);
+            }
+        });
+        modal.setContent(`<h3>${i18next.t('modals.download.title')}</h3><div id="${SELECTORS.PROGRESS_BAR}"></div>`);
+        modal.addFooterBtn(i18next.t('modals.buttons.cancel'), 'tingle-btn tingle-btn--danger tingle-btn--pull-right', function() {
+            modal.close();
+        });
+        // Prepare progress bar
+        const progressBar = new ProgressBar.Line(`#${SELECTORS.PROGRESS_BAR}`, {
+            trailColor: '#bbbbbb',
+            color: COLORS.EXP_BG,
+            text: {
+                style: {
+                    position: 'absolute',
+                    right: '0',
+                }
+            },
+            step: (_, bar) => {
+                bar.setText(Math.round(bar.value() * 100) + '%');
+            }
+        });
+        modal.open();
+
+        // Start activity downloader
+        // unsafeWindow is global (we should have it encapsulated like other instances to be consistent)
+        const downloader = new downloaderClass.prototype.constructor(unsafeWindow, token, function(current, total) {
+            progressBar.animate(total > 0 ? current / total : 0);
+        });
+        // Fetch pages
+        await downloader.fetchPages();
+        // If download wasn't cancelled, process and open save window
+        if (!token.getToken('cancel')) {
+            const blob = downloader.process().toBlob();
+            const save = () => saveAs(blob, `${i18next.t('profileName', { lng: 'common' })}_${downloader.filename}_${this.moment().format('YYYYMMDDTHHmm')}.json`);
+            save();
+            modal.close();
+            // Open done modal
+            this.done(save);
+        }
+    }
+
+    /**
+     * Open modal to show download is done and option to save file
+     * @param {Function} save anonymous function to save file
+     */
+    done(save) {
+        const { i18next } = this;
+        const modal = Modals.newModal();
+        modal.setContent(`<h3>${i18next.t('modals.done.title')}</h3><p>${i18next.t('modals.done.text')}</p>`);
+        modal.addFooterBtn(i18next.t('modals.buttons.save'), 'tingle-btn tingle-btn--primary tingle-btn--pull-right', function() {
+            save();
+        });
+        modal.addFooterBtn(i18next.t('modals.buttons.close'), 'tingle-btn tingle-btn--default tingle-btn--pull-right', function() {
+            modal.close();
+        });
+        modal.open();
+    }
+}
+
+/**
  * Helper functions for Netflix title manipulation
  */
 class NetflixTitle {
@@ -716,6 +833,7 @@ class ExpiringTitlesBuilder {
             new ActionLinks($, i18next)
                 .addLink(TinFunctions.forceRefresh, null, 'actions.forceRefresh', 'refresh')
                 .addLink(TinFunctions.exportList, { list: mylist }, 'actions.export', 'save_alt', { download: filename })
+                .addLink(() => new Modals(i18next, this.moment).choose(), null, 'actions.downloadActivity', 'cloud_download')
                 .appendTo(row);
         }
 
@@ -1124,6 +1242,8 @@ const SELECTORS = {
     IMG_PREFIX: "tin-img-",
     OVERLAY: "tin-overlay",
     OVERLAY_WRAPPER: "tin-overlay-wrapper",
+    MODAL: "tin-modal",
+    PROGRESS_BAR: "tin-progress-bar",
     WATCHED_CARD: "tin-watched-card",
     MYLIST_TAB_NUMBER: "tin-mylist-tab-number",
     JUST_ADDED: "tin-just-added"
@@ -1187,6 +1307,8 @@ const CSS = `
 .navigation-tab a:hover:not(.current) #${SELECTORS.MYLIST_TAB_NUMBER} { border-color: #b3b3b3; }
 
 .${SELECTORS.JUST_ADDED} { opacity: 0; }
+
+.${SELECTORS.MODAL} { color: #000000; }
 `;
 
 (function() {
