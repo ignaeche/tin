@@ -16,6 +16,9 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/i18next/11.5.0/i18next.min.js#sha256-OkYwGDArM5E/cUjqyUWhWooD5cUY3HmiwTQE9kiKa/s=
 // @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js#sha256-VrmtNHAdGzjNsUNtWYG55xxE9xDTz4gF63x/prKXKH0=
 // @require      https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/2.2.2/moment-duration-format.min.js#sha256-bXC/nhRjq/J7K4hnL8yvthqXkskSKOsZNfrLgXBigYg=
+// @require      https://cdnjs.cloudflare.com/ajax/libs/tingle/0.13.2/tingle.min.js#sha256-4jpOAyubHcftmStoDfQrzFrhW/foVzpv8sxpQjWtzTg=
+// @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js#sha256-FPJJt8nA+xL4RU6/gsriA8p8xAeLGatoyTjldvQKGdE=
+// @require      https://cdnjs.cloudflare.com/ajax/libs/progressbar.js/1.0.1/progressbar.min.js#sha256-VupM2GVVXK2c3Smq5LxXjUHBZveWTs35hu1al6ss6kk=
 // @updateURL    https://github.com/ignaeche/tin/raw/master/tin.user.js
 // @downloadURL  https://github.com/ignaeche/tin/raw/master/tin.user.js
 // @supportURL   https://github.com/ignaeche/tin/issues
@@ -1252,6 +1255,7 @@ const CSS = `
             GM_addStyle(`.${SELECTORS.IMG_PREFIX}${key} { content: url('${item.icon}') }`)
         });
         $("head").append($("<link>", { href: "https://fonts.googleapis.com/icon?family=Material+Icons", rel: "stylesheet" }))
+        $("head").append($("<link>", { href: "https://cdnjs.cloudflare.com/ajax/libs/tingle/0.13.2/tingle.min.css", rel: "stylesheet" }))
     }
 
     /**
