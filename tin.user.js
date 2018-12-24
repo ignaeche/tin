@@ -827,15 +827,16 @@ class ExpiringTitlesBuilder {
         });
         row.appendTo(this.container);
 
+        const actionLinks = new ActionLinks($, i18next).appendTo(row);
         // Export List link
         if (mylist.length) {
             const filename = `${i18next.t('profileName', { lng: 'common' })}_${this.moment().format('YYYYMMDDTHHmm')}.json`;
-            new ActionLinks($, i18next)
-                .addLink(TinFunctions.forceRefresh, null, 'actions.forceRefresh', 'refresh')
-                .addLink(TinFunctions.exportList, { list: mylist }, 'actions.export', 'save_alt', { download: filename })
-                .addLink(() => new Modals(i18next, this.moment).choose(), null, 'actions.downloadActivity', 'cloud_download')
-                .appendTo(row);
+            actionLinks
+                .addLink(TinFunctions.exportList, { list: mylist }, 'actions.export', 'save_alt', { download: filename });
         }
+        actionLinks
+            .addLink(TinFunctions.forceRefresh, null, 'actions.forceRefresh', 'refresh', null, true)
+            .addLink(() => new Modals(i18next, this.moment).choose(), null, 'actions.downloadActivity', 'cloud_download');
 
         return this;
     }
