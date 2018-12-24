@@ -154,6 +154,190 @@ class FalcorWrapper {
 };
 
 /**
+ * Simple class to hold values
+ */
+class Token {
+    /**
+     * Constructor; uses Map to store values
+     */
+    constructor() {
+        this.tokens = new Map();
+    }
+
+    /**
+     * Set token with name and value
+     * @param {String} name
+     * @param {Object} value
+     */
+    setToken(name, value) {
+        this.tokens.set(name, value);
+        return this;
+    }
+
+    /**
+     * Return token with name
+     * @param {String} name
+     */
+    getToken(name) {
+        return this.tokens.get(name);
+    }
+}
+
+/**
+ * Generic class to fetch pages from Netflix API
+ */
+class NetworkClientDownloader {
+    /**
+     * Constructor
+     * @param {Window} unsafeWindow window object
+     * @param {Token} token instance
+     * @param {Function} progressCallback function to update UI
+     */
+    constructor(unsafeWindow, token, progressCallback) {
+        this.unsafeWindow = unsafeWindow;
+        this.token = token;
+        this.progressCallback = progressCallback;
+        this.result = {};
+    }
+
+    /**
+     * Fetch single page using Netflix request calls
+     * @param {number} page page to fetch
+     * @returns {Promise}
+     */
+    fetchSinglePage(page) {
+        return this.unsafeWindow.netflix.appContext.getNetworkClient().request({
+            method: "GET",
+            protocol: "https",
+            query: {
+                pg: page,
+                pgSize: 20
+            },
+            resource: this.resource,
+            service: "api",
+            authorize: !0
+        }).toPromise();
+    }
+
+    /**
+     * Fetch pages until total size is met
+     */
+    async fetchPages() {
+        const pages = [];
+        let currentPage = 0, totalSize = 0, currentSize = 0;
+        do {
+            // Cancel download operation if cancel token set to true
+            if (this.token.getToken('cancel')) break;
+            // Get single page
+            const page = await this.fetchSinglePage(currentPage);
+            // Set total size on first run
+            totalSize = totalSize || page[this.keys.totalSize];
+            // Add number of fetched items to current total
+            currentSize += page[this.keys.items].length;
+            // Next page and push to array
+            currentPage++;
+            pages.push(page);
+            // Update progress
+            this.progressCallback(currentSize, totalSize);
+        } while (currentSize < totalSize);
+        // Store pages
+        this.result.pages = pages;
+        return this;
+    }
+
+    /**
+     * Reduce page into single array and place it in a copy of first page object
+     */
+    process() {
+        // Copy first page object
+        this.result.history = Object.assign({}, this.result.pages[0]);
+        // Fold pages into items list
+        this.result.history[this.keys.items] = this.result.pages.reduce((acc, cur) => {
+            return acc.concat(cur[this.keys.items]);
+        }, []);
+        // Delete unnecessary properties
+        delete this.result.history.size;
+        delete this.result.history.page;
+        return this;
+    }
+
+    /**
+     * Return blob with JSON of fetched data
+     */
+    toBlob() {
+        const json = JSON.stringify(this.result.history, null, 4);
+        const blob = new Blob([json], { type: 'application/json' });
+        return blob;
+    }
+}
+
+/**
+ * Class to download Viewing Activity
+ */
+class ViewingActivityDownloader extends NetworkClientDownloader {
+    constructor(unsafeWindow, token, progressCallback) {
+        super(unsafeWindow, token, progressCallback);
+    }
+
+    /**
+     * Get API resource
+     */
+    get resource() {
+        return "/viewingactivity";
+    }
+
+    /**
+     * Get specific keys
+     */
+    get keys() {
+        return {
+            totalSize: 'vhSize',
+            items: 'viewedItems'
+        }
+    }
+
+    /**
+     * Get filename string
+     */
+    get filename() {
+        return "ViewingActivity";
+    }
+}
+
+/**
+ * Class to download Rating History
+ */
+class RatingHistoryDownloader extends NetworkClientDownloader {
+    constructor(unsafeWindow, token, progressCallback) {
+        super(unsafeWindow, token, progressCallback);
+    }
+
+    /**
+     * Get API resource
+     */
+    get resource() {
+        return "/ratinghistory";
+    }
+
+    /**
+     * Get specific keys
+     */
+    get keys() {
+        return {
+            totalSize: 'totalRatings',
+            items: 'ratingItems'
+        }
+    }
+
+    /**
+     * Get filename string
+     */
+    get filename() {
+        return "RatingHistory";
+    }
+}
+
+/**
  * Class with action functions
  */
 class TinFunctions {
