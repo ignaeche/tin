@@ -14,6 +14,7 @@ Improve your Netflix experience by:
 - having search links to [IMDb](https://www.imdb.com/), [Wikipedia](https://www.wikipedia.org/) and many others in every title.
 - having a link to the overview page of a title in the `More Like This` tab.
 - knowing how many new titles were added in the last week with a helpful icon.
+- downloading your complete viewing activity and rating history in JSON format.
 
 ## Installation
 
