@@ -351,8 +351,8 @@ class TinFunctions {
      * @param {Event} event
      */
     static viewInList(event) {
-        const { title, id } = event.data;
-        const selectors = `[aria-label="${NetflixTitle.escapeQuotes(title)}"], div[data-id='${id}']`;
+        const { id } = event.data;
+        const selectors = `div[data-id='${id}']`;
         document.querySelector(selectors).scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -895,7 +895,7 @@ class ExpiringTitlesBuilder {
         const links = new ActionLinks($, i18next).appendTo(item);
 
         // Check if title card or row is present in DOM
-        if ($(`[aria-label="${NetflixTitle.escapeQuotes(title.title)}"], div[data-id='${title.summary.id}']`).length) {
+        if ($(`div[data-id='${title.summary.id}']`).length) {
             links.addLink(TinFunctions.viewInList, eventData, 'actions.viewInList', 'arrow_downward');
         }
         // If in manual ordering list type, add these action links
