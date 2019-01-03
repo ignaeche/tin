@@ -899,7 +899,7 @@ class ExpiringTitlesBuilder {
             links.addLink(TinFunctions.viewInList, eventData, 'actions.viewInList', 'arrow_downward');
         }
         // If in manual ordering list type, add these action links
-        const titleRow = $(`div[data-id='${title.summary.id}']`);
+        const titleRow = $(`div[videoid='${title.summary.id}']`);
         if (titleRow.length) {
             if ($(".move-to-top", titleRow).length) {
                 links.addLink(TinFunctions.bringToTop, eventData, 'actions.bringToTop', 'arrow_upward', null, true);
