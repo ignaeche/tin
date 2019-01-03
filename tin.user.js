@@ -652,6 +652,19 @@ class NetflixTitle {
     }
 
     /**
+     * Add data-id attribute to .title-card-container (for most cards) / .slider-refocus (More Like This tab)
+     * @param {jQuery} $ jQuery instance
+     * @param {Element} item parent element
+     * @param {number} id video id of Netflix title
+     */
+    static addVideoIdToContainer($, item, id) {
+        const container = $(".title-card-container, .slider-refocus", item);
+        if (!container.attr('data-id')) {
+            container.attr('data-id', id);
+        }
+    }
+
+    /**
      * Escape quotes in string
      * @param {string} string string to escape
      */
@@ -1122,18 +1135,18 @@ class TitleCardOverlay {
         // Get icons and classes for the overlay
         const { icons, classes } = this.getTitleStatus(title);
 
-        // Escape quotes and select label (child of slider item div)
-        const label = $(`.slider-item [aria-label="${NetflixTitle.escapeQuotes(title.title)}"]`);
+        // Select title card container with data-id matching title id (child of slider item div)
+        const container = $(`.slider-item [data-id=${title.summary.id}]`);
 
         // Add wrapper classes to title card (if any)
-        label.closest('.title-card-container').addClass(classes.join(' '));
+        container.addClass(classes.join(' '));
 
         // Since each title can appear multiple times in a page, iterate over elements
-        label.each((_, element) => {
+        container.each((_, element) => {
             // Get overlay for this card
             const overlay = $(`.${SELECTORS.OVERLAY}`, element);
-            // If tabindex is 0, card is visible
-            const tabIndex = $(element).attr('tabindex');
+            // If tabindex is 0, card is visible; fetch tabindex from child anchor
+            const tabIndex = $('a', element).attr('tabindex');
             // If number of icons has changed and is visible, update overlay
             // For title cards in 'More Like This', check for simsLockup & !sliderItemHidden class
             if (overlay.data('icons') != icons.length && (tabIndex == '0' || $(element).filter('.simsLockup').not('.sliderItemHidden').length)) {
@@ -1566,6 +1579,7 @@ const CSS = `
                 try {
                     const id = NetflixTitle.getVideoIdFromAttribute($, item);
                     if (id && overlay.addOverlay(item, id)) {
+                        NetflixTitle.addVideoIdToContainer($, item, id);
                         ids.push(id);
                     }
                 } catch (err) { /* ignore */ }
