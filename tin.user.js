@@ -1306,7 +1306,7 @@ const CSS = `
 .episodesContainer .single-season-label { display: inline-block; }
 
 .${SELECTORS.WATCHED_CARD} .boxart-container img { transition: filter 0.4s ease; }
-.${SELECTORS.WATCHED_CARD} [tabindex='0'] img, .${SELECTORS.WATCHED_CARD} .bob-card img { filter: brightness(0.5) blur(1px); }
+.${SELECTORS.WATCHED_CARD} [tabindex='0'] img, .${SELECTORS.WATCHED_CARD} [tabindex='0'] + .boxart-tall-panel img { filter: brightness(0.5) blur(1px); }
 
 .${SELECTORS.OVERLAY} { position: absolute; top: 0; z-index: 1; display: block; width: 100%; height: 100%; }
 .${SELECTORS.OVERLAY} { opacity: 1; transition: opacity 0.4s linear 0.6s; }
