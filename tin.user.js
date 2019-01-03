@@ -1314,6 +1314,7 @@ const CSS = `
 .${SELECTORS.OVERLAY} i { color: #FFFFFF; background-color: #00000080; border: 0.1em solid #FFFFFF80;
     padding: 5px; margin: 2% 0 2% 2%; border-radius: 100%; filter: drop-shadow(1px 1px 5px #00000080);
     opacity: 0; overflow: hidden; font-size: 1vw; }
+.simsLockup .${SELECTORS.OVERLAY} { z-index: -1; }
 
 #${SELECTORS.MYLIST_TAB_NUMBER} { margin-left: 5px; padding: 3px 5px; border: 2px solid #e5e5e5;
     border-radius: 14px; transition: border-color 0.4s ease; opacity: 0; font-weight: 700; }
