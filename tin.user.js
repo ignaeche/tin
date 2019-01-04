@@ -912,6 +912,15 @@ class ExpiringTitlesBuilder {
 
         return this;
     }
+
+    /**
+     * Append any element to container
+     * @param {Element} child element to append to container
+     */
+    appendToContainer(child) {
+        this.container.append(child);
+        return this;
+    }
 }
 
 /**
@@ -1069,7 +1078,8 @@ class TitleCardOverlay {
     getTitleStatus(title) {
         const status = {
             icons: [],
-            classes: []
+            classes: [],
+            filterClasses: []
         }
         // Title is in queue
         if (title.queue.inQueue) {
@@ -1079,11 +1089,13 @@ class TitleCardOverlay {
         if (title.bookmarkPosition >= title.creditsOffset) {
             status.icons.push(this.icons.watched.name);
             status.classes.push(SELECTORS.WATCHED_CARD);
+            status.filterClasses.push(SELECTORS.FILTER_WATCHED);
         }
         // Show that has been watched at least once (started shows are true, never watched are false)
         // Movies are always false; that's why previous if is used
         if (!NetflixTitle.isMovie(title) && title.watched) {
             status.icons.push(this.icons.watched.name);
+            status.filterClasses.push(SELECTORS.FILTER_WATCHED);
         }
         // Title has expiration date
         if (title.availabilityEndDateNear) {
@@ -1097,6 +1109,7 @@ class TitleCardOverlay {
         if (title.userRating.userRating == 1) {
             status.icons.push(this.icons.dislike.name);
         }
+        status.filterClasses.push(SELECTORS.FILTER_TYPE_PREFIX + title.summary.type);
         return status;
     }
 
@@ -1133,13 +1146,14 @@ class TitleCardOverlay {
     modifyCardOverlay(title) {
         const { $ } = this;
         // Get icons and classes for the overlay
-        const { icons, classes } = this.getTitleStatus(title);
+        const { icons, classes, filterClasses } = this.getTitleStatus(title);
 
         // Select title card container with data-id matching title id (child of slider item div)
         const container = $(`.slider-item [data-id=${title.summary.id}]`);
 
         // Add wrapper classes to title card (if any)
         container.addClass(classes.join(' '));
+        container.addClass(filterClasses.join(' '));
 
         // Since each title can appear multiple times in a page, iterate over elements
         container.each((_, element) => {
@@ -1163,6 +1177,136 @@ class TitleCardOverlay {
                 });
             }
         });
+    }
+}
+
+/**
+ * Class to apply filters to My List
+ */
+class Filters {
+    /**
+     * Construct class and set defaults
+     * @param {jQuery} $ jQuery instance
+     * @param {i18next} i18next instance
+     */
+    constructor($, i18next) {
+        this.$ = $;
+        this.i18next = i18next;
+
+        // value: jQuery test for .is()
+        // key: i18next translation
+        this.filters = [
+            {
+                name: 'type',
+                values: [
+                    { value: '*', key: 'filter.all' },
+                    { value: `.${SELECTORS.FILTER_TYPE_PREFIX}show`, key: 'filter.shows' },
+                    { value: `.${SELECTORS.FILTER_TYPE_PREFIX}movie`, key: 'filter.movies' }
+                ]
+            },
+            {
+                name: 'watch_status',
+                values: [
+                    { value: '*', key: 'filter.all' },
+                    { value: `:not(.${SELECTORS.FILTER_WATCHED})`, key: 'filter.notWatched' },
+                    { value: `.${SELECTORS.FILTER_WATCHED}`, key: 'filter.watched' }
+                ]
+            }
+        ];
+        // Default active filters
+        this.activeFilters = new Map();
+        this.defaultFilters();
+    }
+
+    /**
+     * Default active filter values
+     */
+    defaultFilters() {
+        this.activeFilters.set('type', '*');
+        this.activeFilters.set('watch_status', '*');
+    }
+
+    /**
+     * Set container and itemSelector values
+     * @param {Object} options object with filter options
+     */
+    setOptions(options) {
+        this.options = options;
+    }
+
+    /**
+     * Apply filters to items
+     */
+    applyFilters() {
+        const { options } = this;
+        if (options && options.container && options.container.length) {
+            let filterCount = 0;
+            // Iterate over items inside container
+            $(options.itemSelector, options.container).each((_, card) => {
+                let test = true;
+                // Test each filter with is()
+                this.activeFilters.forEach(function(value) {
+                    test = test && $(card).is(value);
+                });
+                // If test is passed show, otherwise hide
+                if (test) {
+                    filterCount++;
+                    $(card).removeClass(SELECTORS.FILTER_HIDE).addClass(SELECTORS.FILTER_SHOW);
+                } else {
+                    $(card).removeClass(SELECTORS.FILTER_SHOW).addClass(SELECTORS.FILTER_HIDE);
+                }
+            });
+            // Update filtered items count
+            this.updateCount(filterCount);
+        }
+    }
+
+    /**
+     * Display the number of filtered items
+     * @param {number} count number of items shown
+     */
+    updateCount(count) {
+        const { i18next } = this;
+        $(`#${SELECTORS.FILTER_COUNT}`).text(i18next.t('filter.showingCount', { count }));
+    }
+
+    /**
+     * Make divs and buttons with configured filters
+     */
+    addFilters() {
+        const { $, i18next } = this;
+        
+        const div = $("<div>");
+        div.append(i18next.t('filter.title'));
+        // Iterate over each filter group
+        $.each(this.filters, (_, group) => {
+            // Set button group
+            const grp = $("<div>", { class: SELECTORS.BUTTON_GROUP });
+            div.append(grp);
+            // Click event to change checked button
+            grp.on('click', `.${SELECTORS.BUTTON}`, function() {
+                grp.find(`.${SELECTORS.IS_CHECKED}`).removeClass(SELECTORS.IS_CHECKED);
+                $(this).addClass(SELECTORS.IS_CHECKED);
+            });
+            // Iterate over buttons
+            $.each(group.values, (_, button) => {
+                // Set button
+                const btn = $("<button>", { class: SELECTORS.BUTTON, text: i18next.t(button.key) });
+                // Set checked button
+                if (this.activeFilters.get(group.name) == button.value) btn.addClass(SELECTORS.IS_CHECKED);
+                grp.append(btn);
+                // Bind on click to change active filters and apply filters
+                btn.on('click', () => {
+                    this.activeFilters.set(group.name, button.value);
+                    this.applyFilters();
+                });
+            });
+        });
+        // Append filter count
+        const count = $("<span>", { id: SELECTORS.FILTER_COUNT });
+        div.append(count);
+
+        return div;
     }
 }
 
@@ -1260,7 +1404,16 @@ const SELECTORS = {
     PROGRESS_BAR: "tin-progress-bar",
     WATCHED_CARD: "tin-watched-card",
     MYLIST_TAB_NUMBER: "tin-mylist-tab-number",
-    JUST_ADDED: "tin-just-added"
+    JUST_ADDED: "tin-just-added",
+    FILTER_PREFIX: "tin-filter-",
+    FILTER_TYPE_PREFIX: "tin-filter--type-",
+    FILTER_WATCHED: "tin-filter--watched",
+    FILTER_HIDE: "tin-filter--hide",
+    FILTER_SHOW: "tin-filter--show",
+    FILTER_COUNT: "tin-filter-count",
+    BUTTON_GROUP: "tin-button-group",
+    BUTTON: "tin-button",
+    IS_CHECKED: "tin-is-checked",
 }
 
 const ATTRS = {
@@ -1324,6 +1477,17 @@ const CSS = `
 .${SELECTORS.JUST_ADDED} { opacity: 0; }
 
 .${SELECTORS.MODAL} { color: #000000; }
+
+.${SELECTORS.BUTTON_GROUP} { display: inline-block; margin-left: 10px; }
+.${SELECTORS.BUTTON} { font-size: 0.7vw; border-width: 1px 0 1px 0; border-style: solid; border-color: ${COLORS.ACTION_LINK}; padding: 5px; transition: all 0.4s ease-in-out;
+    background-color: transparent; }
+.${SELECTORS.BUTTON}:active, .${SELECTORS.BUTTON}:hover, .${SELECTORS.BUTTON}.${SELECTORS.IS_CHECKED} { color: ${COLORS.EXP_BG}; background-color: ${COLORS.ACTION_LINK}; }
+.${SELECTORS.BUTTON_GROUP} .${SELECTORS.BUTTON}:first-child { border-radius: 5px 0 0 5px; border-left: 1px solid ${COLORS.ACTION_LINK} }
+.${SELECTORS.BUTTON_GROUP} .${SELECTORS.BUTTON}:last-child { border-radius: 0 5px 5px 0; border-right: 1px solid ${COLORS.ACTION_LINK} }
+.${SELECTORS.FILTER_HIDE} { opacity: 0; transform: scale(0); }
+.rowListItem.${SELECTORS.FILTER_HIDE} { transform: scale(1, 0); }
+.title-card-container, .rowListItem { transition: all 0.4s ease-in-out; }
+#${SELECTORS.FILTER_COUNT} { margin-left: 10px; }
 `;
 
 (function() {
@@ -1364,6 +1528,7 @@ const CSS = `
     moment.locale(locale);
 
     const falcor = new FalcorWrapper(unsafeWindow);
+    const filterInstance = new Filters($, i18next);
 
     addStyle()
     // Observe changes to body
@@ -1416,6 +1581,10 @@ const CSS = `
         // Check if in 'My List'
         if (document.URL.includes('my-list')) {
             appendSearchLinksToMyListItems();
+            // Modify row list items if manual ordering is on
+            modifyRowListItems();
+            // Apply filters if in 'My List'
+            filterInstance.applyFilters();
 
             const parent = $(".gallery, .rowListContainer");
             const builder = new ExpiringTitlesBuilder($, i18next, moment, parent)
@@ -1435,6 +1604,13 @@ const CSS = `
                         .addMyListInfo(mylist)
                         .addCountExpirationRow(sortedExpiring);
                     $.each(sortedExpiring, (_, title) => builder.addNetflixTitleRow(title));
+                    // Filter init
+                    filterInstance.setOptions({
+                        container: parent,
+                        // Determine manual ordering
+                        itemSelector: $('.rowListContainer').length ? '.rowListItem' : '.title-card-container'
+                    });
+                    builder.appendToContainer(filterInstance.addFilters());
                 } else {
                     // 'My List' is empty
                     builder.makeContainer(length).addMyListInfo({ length });
@@ -1603,6 +1779,38 @@ const CSS = `
         } catch (err) {
             console.error("TIN: could not modify cards", err);
         }
+    }
+
+    /**
+     * Add filtering classes to manual ordering list items
+     */
+    async function modifyRowListItems() {
+        // If not in manual ordering, do nothing
+        if (!$(".rowListContainer").length) return;
+        try {
+            const ids = [];
+
+            // Fetch ids from items shown
+            $(".rowListItem").each((_, item) => {
+                if ($(item).is(`[class*='${SELECTORS.FILTER_PREFIX}']`)) return;
+                const id = $(item).attr('data-id');
+                ids.push(id);
+            });
+
+            // No ids collected, do nothing
+            if (!ids.length) return;
+
+            // Get summaries from Falcor
+            const statusList = await falcor.getStatusOfTitles(ids);
+
+            // Get instance of TitleCardOverlay to use getTitleStatus
+            const overlayHelper = new TitleCardOverlay($, null);
+            $.each(statusList, (_, title) => {
+                // Get filter classes and add them to each rowListItem
+                const { filterClasses } = overlayHelper.getTitleStatus(title);
+                $(`#rowListItem-${title.summary.id}`).addClass(filterClasses.join(' '));
+            });
+        } catch(err) { /* ignore */ }
     }
 
     /**

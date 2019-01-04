@@ -61,6 +61,16 @@
             "text": "Si no pudiste guardar el archivo, lo puedes guardar nuevamente mediante el botón '$t(modals.buttons.save)'."
         }
     },
+    "filter": {
+        "title": "Filtros",
+        "all": "Todos",
+        "shows": "Series de TV",
+        "movies": "Películas",
+        "watched": "Visto",
+        "notWatched": "No Visto",
+        "showingCount": "Mostrando {{count}} título",
+        "showingCount_plural": "Mostrando {{count}} títulos"
+    },
     "justAdded": "{{count}} título nuevo",
     "justAdded_plural": "{{count}} títulos nuevos"
 }

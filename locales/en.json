@@ -61,6 +61,16 @@
             "text": "If you missed the Save window, you can save the file again with '$t(modals.buttons.save)'."
         }
     },
+    "filter": {
+        "title": "Filters",
+        "all": "All",
+        "shows": "Shows",
+        "movies": "Movies",
+        "watched": "Watched",
+        "notWatched": "Not Watched",
+        "showingCount": "Showing {{count}} title",
+        "showingCount_plural": "Showing {{count}} titles"
+    },
     "justAdded": "{{count}} new title",
     "justAdded_plural": "{{count}} new titles"
 }
